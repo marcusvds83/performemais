@@ -137,6 +137,72 @@ async function postarMensagemComAnexo(client, db, uid, model, resId, body, attac
 }
 
 /**
+ * Posta mensagem SEM anexo no chatter do Odoo 19 (versao que aparece no chatter).
+ *
+ * Igual a postarMensagemComAnexo, mas sem o campo attachment_ids.
+ * Necessario porque Odoo 19 NAO mostra mensagens no chatter se criadas via
+ * mail.message.create apenas com {model, res_id, body, message_type} —
+ * precisa de subtype_id (mt_note) + author_id + record_name + is_internal.
+ *
+ * Usado para: mensagens de cancelamento (sucesso/falha), mensagens informativas,
+ * mensagens de erro sem anexo, etc.
+ *
+ * @param {object} client - XML-RPC client
+ * @param {string} db - Odoo database
+ * @param {number} uid - User ID
+ * @param {string} model - res_model (ex: 'account.move')
+ * @param {number} resId - ID do registro
+ * @param {string} body - HTML body da mensagem
+ * @param {string} [subject] - Assunto (default: 'Mensagem')
+ * @returns {number} ID da mail.message criada
+ */
+async function postarMensagemChatter(client, db, uid, model, resId, body, subject) {
+  // Busca subtype_id mt_note (mensagem interna - aparece no chatter)
+  let subtypeId = false;
+  try {
+    const subtypes = await executeKw(client, db, uid, 'ir.model.data', 'search_read', [
+      [['name', '=', 'mt_note'], ['module', '=', 'mail']], ['res_id'],
+    ]);
+    if (subtypes.length > 0) subtypeId = subtypes[0].res_id;
+  } catch (e) {
+    console.warn('[NFSE-CHAT] Nao foi possivel buscar mt_note subtype:', e.message);
+  }
+
+  // Busca res_id do registro pra setar record_name (Odoo 19 usa pra mostrar no chatter)
+  let recordName = subject || 'Mensagem';
+  let authorId = false;
+  try {
+    const records = await executeKw(client, db, uid, model, 'read', [[resId], ['name']]);
+    if (records.length > 0 && records[0].name) recordName = records[0].name;
+  } catch (e) { /* ignore */ }
+
+  // Busca partner_id do usuario atual (pra author_id)
+  try {
+    const users = await executeKw(client, db, uid, 'res.users', 'read', [[uid], ['partner_id']]);
+    if (users.length > 0 && users[0].partner_id) authorId = users[0].partner_id[0];
+  } catch (e) { /* ignore */ }
+
+  // Cria mail.message com TODOS os campos Odoo 19 (sem attachment_ids)
+  const msgVals = {
+    subject: subject || 'Mensagem',
+    model: model,
+    res_id: resId,
+    record_name: recordName,
+    body: body,
+    message_type: 'comment',
+    subtype_id: subtypeId || false,
+    author_id: authorId || false,
+    email_from: false,
+    date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    is_internal: true,
+  };
+
+  const msgId = await executeKw(client, db, uid, 'mail.message', 'create', [msgVals]);
+  console.log('[NFSE-CHAT] Mensagem postada no chatter (id=' + msgId + '): ' + (subject || '(sem assunto)'));
+  return msgId;
+}
+
+/**
  * Baixa o PDF DANFSe do proprio painel admin (nosso endpoint /api/v1/nfse/dashboard/:id/pdf).
  * Esse endpoint ja gera o PDF perfeito (mesmo que aparece no painel admin).
  * Evita duplicar logica de geracao de PDF.
@@ -637,12 +703,7 @@ async function emitirNfseOdoo(client, db, uid, moveId) {
       '<b>Ambiente:</b> ' + (config.nfse.tp_amb === 1 ? 'PRODUÇÃO' : 'HOMOLOGAÇÃO') + '<br/>' +
       (resultado.chaveAcesso ? '<br/><a href="https://adn.nfse.gov.br/danfse/' + resultado.chaveAcesso + '" target="_blank">📄 Ver DANFSe oficial</a>' : '') +
       '</div>';
-    await executeKw(client, db, uid, 'mail.message', 'create', [{
-      model: 'account.move',
-      res_id: moveId,
-      body: msgBody,
-      message_type: 'comment',
-    }]);
+    await postarMensagemChatter(client, db, uid, 'account.move', moveId, msgBody, 'NFS-e Emitida com Sucesso');
 
     console.log('[NFSE-EMIT] NFS-e ' + (resultado.nNFSe || proximoNumero) + ' autorizada para ' + move.name);
 
@@ -753,12 +814,7 @@ async function safeUpdateError(client, db, uid, moveId, errMsg) {
       '<b>Ambiente:</b> ' + (config.nfse.tp_amb === 1 ? 'PRODUÇÃO' : 'HOMOLOGAÇÃO') + '<br/>' +
       '<b>Próximo passo:</b> Corrija o problema e clique novamente em "Emitir NFS-e"' +
       '</div>';
-    await executeKw(client, db, uid, 'mail.message', 'create', [{
-      model: 'account.move',
-      res_id: moveId,
-      body: msgBody,
-      message_type: 'comment',
-    }]);
+    await postarMensagemChatter(client, db, uid, 'account.move', moveId, msgBody, 'Erro na Emissão de NFS-e');
   } catch (e) {
     console.error('[NFSE-EMIT] Falha ao registrar erro:', e.message);
   }
@@ -867,12 +923,16 @@ async function processarCancelamentosSolicitados(client, db, uid) {
             x_nfse_situacao: '2',
             x_nfse_mensagem: 'Cancelada: ' + (resultado.xMotivo || ''),
           });
-          await executeKw(client, db, uid, 'mail.message', 'create', [{
-            model: 'account.move',
-            res_id: moveId,
-            body: '<b>NFS-e Cancelada com Sucesso</b><br/>Justificativa: Cancelamento solicitado pelo emitente via Odoo<br/>Resposta SEFIN: ' + (resultado.xMotivo || ''),
-            message_type: 'comment',
-          }]);
+          await postarMensagemChatter(
+            client, db, uid, 'account.move', moveId,
+            '<div style="background:#dcfce7;border-left:4px solid #16a34a;padding:12px;margin:8px 0;border-radius:4px">' +
+            '<b style="color:#15803d">✓ NFS-e Cancelada com Sucesso</b><br/>' +
+            '<b>Justificativa:</b> Cancelamento solicitado pelo emitente via Odoo<br/>' +
+            '<b>Resposta SEFIN:</b> ' + (resultado.xMotivo || '') + '<br/>' +
+            '<b>Ambiente:</b> ' + (config.nfse.tp_amb === 1 ? 'PRODUÇÃO' : 'HOMOLOGAÇÃO') +
+            '</div>',
+            'NFS-e Cancelada com Sucesso'
+          );
           console.log('[NFSE-CANCEL-POLL] SUCESSO - Fatura ' + move.name + ' cancelada');
         } else {
           // Falha no cancelamento: volta o status para 'autorizada' (nao marca como erro)
@@ -886,12 +946,16 @@ async function processarCancelamentosSolicitados(client, db, uid) {
             x_nfse_status_emissao: 'autorizada',
             x_nfse_mensagem: 'Falha ao cancelar: ' + motivo.substring(0, 500),
           });
-          await executeKw(client, db, uid, 'mail.message', 'create', [{
-            model: 'account.move',
-            res_id: moveId,
-            body: '<b>Falha no Cancelamento da NFS-e</b><br/>A nota continua <b>autorizada</b>.<br/>Erro: ' + motivo.substring(0, 500),
-            message_type: 'comment',
-          }]);
+          await postarMensagemChatter(
+            client, db, uid, 'account.move', moveId,
+            '<div style="background:#fef2f2;border-left:4px solid #dc2626;padding:12px;margin:8px 0;border-radius:4px">' +
+            '<b style="color:#b91c1c">✗ Falha no Cancelamento da NFS-e</b><br/>' +
+            'A nota continua <b>autorizada</b>.<br/>' +
+            '<b>Erro:</b> ' + motivo.substring(0, 500) + '<br/>' +
+            '<b>Ambiente:</b> ' + (config.nfse.tp_amb === 1 ? 'PRODUÇÃO' : 'HOMOLOGAÇÃO') +
+            '</div>',
+            'Falha no Cancelamento da NFS-e'
+          );
         }
         console.log('=============================================================');
       } catch (e) {
@@ -904,4 +968,4 @@ async function processarCancelamentosSolicitados(client, db, uid) {
   }
 }
 
-module.exports = { processPendingEmissions, baixarPdfDoPainel, postarMensagemComAnexo, criarAttachmentCompativel };
+module.exports = { processPendingEmissions, baixarPdfDoPainel, postarMensagemComAnexo, postarMensagemChatter, criarAttachmentCompativel };

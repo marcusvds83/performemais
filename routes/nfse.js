@@ -126,20 +126,59 @@ router.post('/cancelar', apiKeyAuth, async (req, res) => {
       });
       console.log('[NFSE-CANCEL] Status atualizado no Odoo com sucesso');
 
-      // 5. Posta mensagem no chatter
+      // 5. Posta mensagem no chatter (Odoo 19 compativel - inline com TODOS campos)
       console.log('[NFSE-CANCEL] Etapa 5/5: Postando mensagem no chatter...');
       try {
         const uid = await odooAuthenticate();
         const client = odooClient();
-        const msgId = await new Promise((resolve, reject) => {
-          client.methodCall('execute_kw', [config.odoo.db, uid, config.odoo.api_key, 'mail.message', 'create', [{
-            model: 'account.move',
-            res_id: move_id,
-            body: '<b>NFS-e Cancelada</b><br/>Justificativa: ' + just,
-            message_type: 'comment',
-          }]], (err, result) => err ? reject(err) : resolve(result));
+        const execKw = (model, method, args, kwargs) => new Promise((resolve, reject) => {
+          client.methodCall('execute_kw', [config.odoo.db, uid, config.odoo.api_key, model, method, args || [], kwargs || {}], (err, r) => err ? reject(err) : resolve(r));
         });
-        console.log('[NFSE-CANCEL] Mensagem postada no chatter: mail.message id=' + msgId);
+
+        // Busca subtype_id mt_note (Odoo 19 exige para mensagem aparecer no chatter)
+        let subtypeId = false;
+        try {
+          const subtypes = await execKw('ir.model.data', 'search_read', [
+            [['name', '=', 'mt_note'], ['module', '=', 'mail']], ['res_id'],
+          ]);
+          if (subtypes.length > 0) subtypeId = subtypes[0].res_id;
+        } catch (e) { /* ignore */ }
+
+        // Busca record_name (nome da fatura - Odoo 19 usa pra mostrar no chatter)
+        let recordName = 'NFS-e Cancelada';
+        try {
+          const moves = await execKw('account.move', 'read', [[move_id], ['name']]);
+          if (moves.length > 0 && moves[0].name) recordName = moves[0].name;
+        } catch (e) { /* ignore */ }
+
+        // Busca author_id (partner_id do usuario atual)
+        let authorId = false;
+        try {
+          const users = await execKw('res.users', 'read', [[uid], ['partner_id']]);
+          if (users.length > 0 && users[0].partner_id) authorId = users[0].partner_id[0];
+        } catch (e) { /* ignore */ }
+
+        // Cria mail.message com TODOS os campos Odoo 19 (sem attachment_ids - so mensagem)
+        const msgBody = '<div style="background:#dcfce7;border-left:4px solid #16a34a;padding:12px;margin:8px 0;border-radius:4px">' +
+          '<b style="color:#15803d">✓ NFS-e Cancelada</b><br/>' +
+          '<b>Justificativa:</b> ' + just + '<br/>' +
+          '<b>Resposta SEFIN:</b> ' + (resultado.xMotivo || '') + '<br/>' +
+          '<b>Ambiente:</b> ' + (config.nfse.tp_amb === 1 ? 'PRODUÇÃO' : 'HOMOLOGAÇÃO') +
+          '</div>';
+        const msgId = await execKw('mail.message', 'create', [{
+          subject: 'NFS-e Cancelada',
+          model: 'account.move',
+          res_id: move_id,
+          record_name: recordName,
+          body: msgBody,
+          message_type: 'comment',
+          subtype_id: subtypeId || false,
+          author_id: authorId || false,
+          email_from: false,
+          date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+          is_internal: true,
+        }]);
+        console.log('[NFSE-CANCEL] Mensagem postada no chatter (Odoo 19): mail.message id=' + msgId);
       } catch (e) {
         console.error('[NFSE-CANCEL] Falha ao postar mensagem no chatter:', e.message);
       }
