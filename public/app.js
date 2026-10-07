@@ -278,7 +278,7 @@
       const cnpjMasked = maskCnpj(n.cnpj_tomador);
 
       return '<tr data-id="' + n.id + '">' +
-        '<td><span class="td-status-dot ' + statusClass + '" data-tooltip="' + statusLabel + '"></span></td>' +
+        '<td><span class="badge ' + statusClass + '" data-tooltip="' + statusLabel + '"><span class="badge-dot"></span>' + statusLabel + '</span></td>' +
         '<td class="td-fatura">' + esc(n.fatura) + '</td>' +
         '<td class="td-nfse">' + (n.numero_nfse ? esc(String(n.numero_nfse)) : '--') + '</td>' +
         '<td class="td-cliente">' + esc(n.parceiro) + '</td>' +
