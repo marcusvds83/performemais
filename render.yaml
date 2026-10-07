@@ -1,0 +1,77 @@
+# render.yaml — Configuracao do Render para o middleware Performe+ NFS-e
+# Render free: Web Service Node.js long-running com setInterval de 30s.
+# Para evitar spin-down (dormir apos 15min sem incoming HTTP), use um pinger
+# externo (cron-job.org) batendo em /health a cada 5 minutos.
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: performemais-nfse
+    env: node
+    plan: free
+    region: oregon  # ou sao-paulo se disponivel
+    branch: main
+    repo: https://github.com/marcusvds83/performemais
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_KEY
+        sync: false  # preencha no painel do Render
+      - key: CRON_SECRET
+        sync: false
+      - key: ODOO_ENABLED
+        value: "1"
+      - key: ODOO_URL
+        value: https://performe.odoo.com
+      - key: ODOO_DB
+        value: performe
+      - key: ODOO_USER
+        sync: false  # paulo.yure@gmail.com
+      - key: ODOO_API_KEY
+        sync: false
+      - key: ODOO_POLLING_MS
+        value: "30000"  # 30 segundos
+      # ODOO_CRON_MODE nao precisa definir: deteccao automatica no config.js
+      # (Render = long-running -> setInterval ativo por default)
+      - key: NFSE_UF
+        value: PR
+      - key: NFSE_CIDADE
+        value: Curitiba
+      - key: NFSE_CODIGO_IBGE
+        value: "4106902"
+      - key: NFSE_TP_AMB
+        value: "2"  # 1=producao, 2=homologacao
+      - key: NFSE_SERIE
+        value: "11111"  # serie municipal PJAM em Curitiba (confirmado pela ultima NF)
+      - key: NFSE_ALIQUOTA_ISS
+        value: "5.00"
+      - key: NFSE_C_NBS
+        value: "118065900"  # codigo municipal PJAM em Curitiba
+      - key: NFSE_C_TRIB_NAC
+        value: "170201"  # LC 116 - Datilografia/digitacao
+      - key: NFSE_OP_SIMP_NAC
+        value: "3"
+      - key: NFSE_P_TOT_TRIB_SN
+        value: "6.00"
+      - key: NFSE_VER_APLIC
+        value: performemais_1.0.0
+      - key: NFSE_INCLUIR_IM
+        value: "0"  # NAO enviar IM (E0120 da SEFIN)
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false  # colar com \n literais
+      - key: FIREBASE_CERT_COLLECTION
+        value: certificados
+      - key: FIREBASE_CERT_DOC_ID
+        value: performe-a1
+      - key: SEFIN_PROD_URL
+        value: https://sefin.nfse.gov.br/SefinNacional
+      - key: SEFIN_HOM_URL
+        value: https://sefin.producaorestrita.nfse.gov.br/SefinNacional

@@ -2,7 +2,9 @@
  * server.js — Servidor Express do middleware NFS-e/NF-e Performe+
  * ==============================================================
  * Performe+ (cursos) | SPED NFS-e v1.01 | NF-e SEFAZ | Certificado A1 | Firebase (cofre)
- * Deploy: Vercel (substitui Vercel) — fork do performemais adaptado para Performe+.
+ * Deploy: Render (producao, free, long-running + pinger externo)
+ *         Vercel (alternativo, serverless + cron HTTP externo)
+ *         localhost (dev)
  *
  * Rotas:
  *   GET  /                                        — Painel Dashboard (SPA)
@@ -20,7 +22,7 @@
  *   GET  /api/v1/nfse/dashboard/:id/xml         — Download XML
  *   GET  /api/v1/nfse/dashboard/:id/pdf         — Download PDF DANFSe
  *   GET  /api/v1/nfse/dashboard/:id/consultar   — Consulta NFS-e na SEFIN
- *   GET  /api/cron/process-pending              — Cron Vercel: dispara polling
+ *   GET  /api/cron/process-pending              — Cron HTTP (Vercel Cron, cron-job.org, GitHub Actions)
  */
 
 const express = require('express');
@@ -49,11 +51,15 @@ app.get('/health', (req, res) => {
   res.json({
     servico: 'nfse-performe',
     versao: '1.0.0',
+    ambiente: config.ambiente, // render | vercel | local
     cidade: config.nfse.cidade,
     uf: config.nfse.uf,
     tp_amb: config.nfse.tp_amb,
     odoo: config.odoo.enabled,
     firebase_configurado: !!(config.firebase.project_id && config.firebase.client_email),
+    public_url: config.public_url || '(local)',
+    polling_ativo: !config.odoo.cron_mode,
+    polling_interval_ms: config.odoo.polling_interval_ms,
     timestamp: new Date().toISOString(),
   });
 });
@@ -66,20 +72,27 @@ app.use('/api/v1/nfse', adminToolsRoutes);
 app.use('/api/cron', cronRoutes);
 
 // === Polling de emissões pendentes ===
-// ATENCAO: No Vercel (Serverless) o setInterval NAO persiste entre invocacoes frias.
-// O cron do Vercel (vercel.json > crons) chama /api/cron/process-pending a cada minuto.
-// Em ambientes persistentes (Vercel, Railway, localhost), o setInterval funciona normalmente.
+// - Render (long-running): setInterval persiste enquanto o processo estiver vivo.
+//   Render free dorme apos 15 min sem incoming HTTP. Use pinger externo
+//   (cron-job.org) batendo no /health a cada 5 min para manter acordado.
+// - Vercel (serverless): setInterval NAO persiste. Use cron HTTP externo
+//   (Vercel Cron Pro, cron-job.org, GitHub Actions) chamando /api/cron/process-pending.
+// - localhost/dev: setInterval funciona normalmente.
 let pollingTimer = null;
 
 function startPolling() {
   if (!config.odoo.enabled || pollingTimer) return;
   if (config.odoo.cron_mode) {
-    console.log('[POLLING] Modo cron ativado (ODOO_CRON_MODE=1). setInterval desativado.');
-    console.log('[POLLING] Configure o cron do Vercel (vercel.json) ou chame POST /api/v1/nfse/process-pending periodicamente.');
+    console.log('[POLLING] Modo cron HTTP ativado (setInterval desativado).');
+    console.log('[POLLING] Configure um pinger/cron externo chamando:');
+    console.log('[POLLING]   GET ' + (config.public_url || '<public_url>') + '/api/cron/process-pending');
+    console.log('[POLLING]   com header: x-cron-secret: <CRON_SECRET>');
+    console.log('[POLLING] Opcoes: Vercel Cron, GitHub Actions, cron-job.org');
     return;
   }
   const interval = config.odoo.polling_interval_ms;
-  console.log('[POLLING] Iniciando polling a cada ' + interval + 'ms...');
+  console.log('[POLLING] Modo setInterval ativado (ambiente: ' + config.ambiente + ')');
+  console.log('[POLLING] Iniciando polling a cada ' + interval + 'ms (' + (interval/1000) + 's)...');
   pollingTimer = setInterval(async () => {
     try {
       await processPendingEmissions();
@@ -105,23 +118,27 @@ app.use((err, req, res, _next) => {
   res.status(500).json({ erro: err.message });
 });
 
-// === Inicializar (apenas quando nao for Vercel Serverless) ===
-// Vercel: o handler exportado abaixo e usado; o listen nao roda.
-if (!process.env.VERCEL) {
+// === Inicializar ===
+// Render e localhost: sobem o servidor Express normalmente (long-running).
+// Vercel: o handler exportado abaixo e usado; o listen nao roda em serverless.
+const isServerless = process.env.VERCEL && !process.env.RENDER;
+if (!isServerless) {
   app.listen(config.port, () => {
     console.log('=== NFS-e/NF-e Performe+ Middleware ===');
+    console.log('Ambiente: ' + config.ambiente.toUpperCase());
     console.log('Porta: ' + config.port);
     console.log('Cidade: ' + config.nfse.cidade + '/' + config.nfse.uf);
-    console.log('Ambiente: ' + (config.nfse.tp_amb === 1 ? 'PRODUCAO' : 'HOMOLOGACAO (Producao Restrita)'));
+    console.log('Tp Amb: ' + config.nfse.tp_amb + ' (' + (config.nfse.tp_amb === 1 ? 'PRODUCAO' : 'HOMOLOGACAO') + ')');
     console.log('API SEFIN: ' + (config.nfse.tp_amb === 1 ? config.sefin.producao : config.sefin.homologacao));
     console.log('Firebase: ' + (config.firebase.project_id || 'NAO configurado'));
     console.log('Odoo: ' + (config.odoo.enabled ? config.odoo.url : 'desabilitado'));
-    console.log('Dashboard: http://localhost:' + config.port);
+    console.log('Public URL: ' + (config.public_url || 'http://localhost:' + config.port));
+    console.log('Dashboard: ' + (config.public_url || 'http://localhost:' + config.port));
     console.log('============================================');
     startPolling();
   });
 }
 
-// === Export para Vercel Serverless ===
+// === Export (para Vercel Serverless e testes) ===
 module.exports = app;
 module.exports.startPolling = startPolling;

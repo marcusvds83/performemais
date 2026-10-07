@@ -145,15 +145,17 @@ async function postarMensagemComAnexo(client, db, uid, model, resId, body, attac
  * @returns {Promise<Buffer>} Buffer do PDF
  */
 async function baixarPdfDoPainel(moveId) {
-  // Descobre a URL do proprio middleware (Vercel ou localhost)
+  // Descobre a URL do proprio middleware (Render, Vercel ou localhost)
+  // Render usa RENDER_EXTERNAL_URL (ex: https://performemais.onrender.com)
+  // Vercel usa VERCEL_URL (ex: https://performemais.vercel.app)
+  // Local usa http://localhost:PORT
   const port = config.port || process.env.PORT || 10000;
-  const isVercel = !!process.env.VERCEL || !!process.env.VERCEL_URL;
-  const baseUrl = isVercel
-    ? (process.env.VERCEL_URL || 'https://performemais.vercel.app').replace(/\/+$/, '')
+  const baseUrl = config.public_url
+    ? config.public_url
     : 'http://localhost:' + port;
   const url = baseUrl + '/api/v1/nfse/dashboard/' + moveId + '/pdf';
 
-  console.log('[NFSE-PDF] Baixando PDF do painel: ' + url);
+  console.log('[NFSE-PDF] Baixando PDF do painel (ambiente=' + config.ambiente + '): ' + url);
 
   return new Promise((resolve, reject) => {
     const lib = url.startsWith('https') ? https : http;

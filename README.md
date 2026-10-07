@@ -1,6 +1,6 @@
 # Performe+ NFS-e
 
-Middleware de emissão própria de NFS-e e NF-e para a **Performe+** (venda de cursos) — Pontal do Paraná/PR (matriz). Fork do `accel-nfse`, adaptado para deploy no **Vercel** (em vez de Vercel) com cofre Firebase.
+Middleware de emissão própria de NFS-e para a **Performe+** (venda de cursos) — empresa emissora real: **PJAM Serviços e Consultoria Empresarial LTDA** (CNPJ 51210199000113, Curitiba/PR). Fork do `accel-nfse`, deploy multi-ambiente: **Render (produção, free, long-running)** ou Vercel (alternativo, serverless), cofre Firebase.
 
 ## Visão Geral
 
@@ -17,8 +17,8 @@ A Performe+ vende cursos de treinamento (4SX CWB, 4SX PG, etc.) registrados no O
 
 ```
 Odoo 19 (fatura com x_performe_nfse_status = "pendente")
-    | XML-RPC (polling ou Vercel Cron)
-Middleware Node.js (Vercel)
+    | XML-RPC (polling setInterval 30s no Render, ou cron HTTP no Vercel)
+Middleware Node.js (Render free, com pinger externo cron-job.org)
     | certificado A1 (PFX/PEM)
 Firebase (cofre Firestore)
     | XML DPS assinado (SPED NFS-e v1.01)
@@ -33,9 +33,10 @@ Odoo (chatter da fatura)
 
 ```
 performemais/
-  server.js                  Servidor Express (handler Vercel)
-  config.js                  Configurações (env vars)
-  vercel.json                Configuração do Vercel (rotas + cron)
+  server.js                  Servidor Express (Render/Vercel/localhost)
+  config.js                  Configurações (env vars + detecção automática de ambiente)
+  render.yaml                Blueprint do Render (IaC opcional)
+  vercel.json                Configuração do Vercel (serverless, cron HTTP externo)
   package.json
   .env.example               Template de variáveis de ambiente
   services/
@@ -54,12 +55,12 @@ performemais/
     nfse.js                  Rotas de emissão/cancelamento
     dashboard.js             Rotas do painel admin
     admin-tools.js           Ferramentas administrativas
-    cron.js                   Endpoint /api/cron/process-pending (Vercel Cron)
+    cron.js                   Endpoint /api/cron/process-pending (cron HTTP externo)
   public/
     index.html               Frontend SPA
     app.js                   Lógica do frontend
     styles.css               Estilos
-    logo-performe.png        Logo (placeholder)
+    logo-performe.png        Logo
   assets/
     logo-performe.png        Logo para PDF DANFSe
   odoo-scripts/             Scripts de setup do Odoo
@@ -67,17 +68,66 @@ performemais/
     trib-config.json        Config tributária local
 ```
 
-## Deploy no Vercel
+## Deploy no Render (recomendado para Produção)
 
-1. **Fork este repo** no GitHub (ou use o repo `marcusvds83/performemais`)
-2. No Vercel, **New Project > Import Git Repository** > escolha `performemais`
-3. **Framework Preset**: Other (Node.js)
+Render free = Web Service Node.js long-running, igual ao da Accel original.
+Vantagens vs Vercel: `setInterval` roda contínuo (polling 30s) sem precisar de cron HTTP externo.
+
+### Passo a passo
+
+1. Acesse https://dashboard.render.com → **New +** → **Web Service**
+2. Connect a repository → escolha `marcusvds83/performemais`
+3. Configurações:
+   - **Name**: `performemais-nfse`
+   - **Region**: Oregon (ou São Paulo se disponível)
+   - **Branch**: `main`
+   - **Runtime**: Node
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+   - **Plan**: **Free**
+4. **Create Web Service**
+5. Configure Environment Variables (ver `.env.example` e `render.yaml`)
+6. Após deploy, URL: `https://performemais-nfse.onrender.com`
+
+### Pinger externo (cron-job.org) — obrigatório no free
+
+Render free dorme após 15 min sem incoming HTTP. Configure um pinger gratuito:
+1. https://cron-job.org → cadastro
+2. Create Cronjob:
+   - URL: `https://performemais-nfse.onrender.com/health`
+   - Schedule: **every 5 minutes**
+   - Salvar
+3. Pronto — Render nunca mais dorme, polling 30s roda contínuo
+
+### Health check
+Após deploy, valide:
+```
+https://performemais-nfse.onrender.com/health
+```
+Deve retornar:
+```json
+{
+  "servico": "nfse-performe",
+  "ambiente": "render",
+  "odoo": true,
+  "firebase_configurado": true,
+  "polling_ativo": true,
+  "polling_interval_ms": 30000,
+  "public_url": "https://performemais-nfse.onrender.com"
+}
+```
+
+## Deploy no Vercel (alternativo)
+
+Vercel é serverless: `setInterval` NÃO persiste entre invocações frias.
+Necessário cron HTTP externo (Vercel Cron Pro $20/mês, GitHub Actions 5min free, ou cron-job.org).
+1. Fork repo no GitHub
+2. No Vercel: **New Project > Import Git Repository** > `performemais`
+3. **Framework Preset**: Other
 4. **Build Command**: `npm install`
-5. **Output Directory**: (vazio — usa `vercel.json`)
-6. **Install Command**: `npm install`
-7. Configure as **Environment Variables** (ver `.env.example`)
-8. Deploy — o `vercel.json` cuida das rotas e do cron
-
+5. Configure Environment Variables (ver `.env.example`)
+6. Deploy — o `vercel.json` cuida das rotas
+7. Configure cron HTTP externo chamando `GET /api/cron/process-pending` com header `x-cron-secret: <CRON_SECRET>`
 ### Cron (essencial para Vercel)
 
 O Vercel é **serverless**: o `setInterval` não persiste entre invocações frias.
