@@ -1,0 +1,39 @@
+{
+  "ibs_cbs": {
+    "habilitado": true,
+    "cinop": "01",
+    "cClassTrib": "01",
+    "cst_ibs": "91",
+    "cst_cbs": "91",
+    "pIBS": 0,
+    "pCBS": 0
+  },
+  "_meta": {
+    "descricao": "Configuracao tributaria IBS/CBS (NT 004/2025 v2.0)",
+    "referencia": "Obrigatorios desde 01/01/2026 na NFS-e Nacional",
+    "periodo_transicao": "2026-2032: ISS+IBS coexistem, PIS/COFINS+CBS coexistem",
+    "cinop_opcoes": {
+      "01": "Prestacao de servicos",
+      "02": "Venda de mercadorias",
+      "03": "Venda de mercadorias com servicos",
+      "04": "Servicos com fornecimento de mercadorias"
+    },
+    "cClassTrib_opcoes": {
+      "01": "Contribuinte",
+      "02": "Nao contribuinte"
+    },
+    "cst_opcoes": {
+      "10": "Isenta",
+      "20": "Nao incidencia",
+      "30": "Suspensa",
+      "40": "Substituicao tributaria",
+      "50": "Diferimento",
+      "60": "Cobranca anterior por substituicao",
+      "70": "Com reducao de base de calculo",
+      "90": "Outras",
+      "91": "Tributacao com aliquota basica (SN)",
+      "99": "Outras",
+      "00": "Nao tributada"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+node_modules/
+.env
+*.pfx
+*.p12
+*.key
+*.pem
+.DS_Store
+Thumbs.db
+npm-debug.log*
+.firebase/
+firestore-debug.log
+ui-debug.log
+
+# Logs e capturas antigas de APIs (nao sao necessarios em producao)
+gov-nfse.json
+ndd.json
+tecnospeed.json
+search.json
+search2.json
+search3.json
+search4.json
+search5.json
+
+# Diretorio de dados runtime
+data/

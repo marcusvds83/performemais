@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Performe+ Fiscal Cloud</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>//</text></svg>">
+</head>
+<body>
+  <!-- Auth Screen -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <img src="/logo-performe.png" alt="Performe+" class="auth-logo-img">
+      </div>
+      <h1>Performe+ Fiscal Cloud</h1>
+      <p class="auth-sub">Painel de Emissao e Gestao Fiscal</p>
+      <form id="auth-form">
+        <input type="password" id="api-key-input" placeholder="API Key" autocomplete="off" spellcheck="false">
+        <button type="submit">Acessar Painel</button>
+        <p class="auth-error" id="auth-error"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main Dashboard -->
+  <div id="dashboard" class="dashboard hidden">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="logo">
+          <img src="/logo-performe.png" alt="Performe+" class="topbar-logo-img">
+          <span class="logo-text">Performe+ Fiscal Cloud</span>
+        </div>
+        <div class="topbar-env" id="env-badge">HOMOLOGACAO</div>
+      </div>
+      <nav class="topbar-tabs" id="main-tabs">
+        <button class="tab-btn active" data-tab="painel">Painel</button>
+        <button class="tab-btn" data-tab="docs">Documentacao</button>
+        <button class="tab-btn" data-tab="impostos">Impostos</button>
+        <button class="tab-btn" data-tab="setup">Setup</button>
+        <button class="tab-btn" data-tab="campos">Campos Odoo</button>
+      </nav>
+      <div class="topbar-right">
+        <div class="status-indicator" id="sefin-indicator">
+          <span class="status-dot"></span>
+          <span class="status-text">SEFIN</span>
+        </div>
+        <div class="status-indicator" id="odoo-indicator">
+          <span class="status-dot"></span>
+          <span class="status-text">Odoo</span>
+        </div>
+        <div class="status-indicator" id="cert-indicator">
+          <span class="status-dot"></span>
+          <span class="status-text">Cert</span>
+        </div>
+        <button class="btn-icon" id="btn-refresh" title="Atualizar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+        </button>
+        <button class="btn-icon" id="btn-logout" title="Sair">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        </button>
+      </div>
+    </header>
+    <div id="tab-painel" class="tab-content">
+    <!-- Content -->
+    <main class="main-content">
+      <!-- KPI Cards -->
+      <section class="kpi-row">
+        <div class="kpi-card kpi-total">
+          <div class="kpi-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+          </div>
+          <div class="kpi-data">
+            <span class="kpi-value" id="kpi-total">--</span>
+            <span class="kpi-label">Total NFS-e</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-auth">
+          <div class="kpi-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+          <div class="kpi-data">
+            <span class="kpi-value" id="kpi-autorizadas">--</span>
+            <span class="kpi-label">Autorizadas</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-pend">
+          <div class="kpi-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          </div>
+          <div class="kpi-data">
+            <span class="kpi-value" id="kpi-pendentes">--</span>
+            <span class="kpi-label">Pendentes</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-err">
+          <div class="kpi-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+          </div>
+          <div class="kpi-data">
+            <span class="kpi-value" id="kpi-erros">--</span>
+            <span class="kpi-label">Erros</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-cancel">
+          <div class="kpi-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          </div>
+          <div class="kpi-data">
+            <span class="kpi-value" id="kpi-canceladas">--</span>
+            <span class="kpi-label">Canceladas</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-value">
+          <div class="kpi-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          </div>
+          <div class="kpi-data">
+            <span class="kpi-value" id="kpi-valor">--</span>
+            <span class="kpi-label">Valor Autorizado</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEFIN Status Bar -->
+      <section class="sefin-bar" id="sefin-bar">
+        <div class="sefin-bar-content">
+          <div class="sefin-bar-left">
+            <span class="sefin-label">gov.br / SEFIN</span>
+            <span class="sefin-url" id="sefin-url">--</span>
+          </div>
+          <div class="sefin-bar-right">
+            <span class="sefin-msg" id="sefin-msg">Verificando conexao...</span>
+            <span class="sefin-latency" id="sefin-latency"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Filters -->
+      <section class="filters">
+        <div class="filter-left">
+          <div class="search-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="search-input" placeholder="Buscar por fatura, cliente ou chave...">
+          </div>
+          <select id="filter-status">
+            <option value="">Todos os Status</option>
+            <option value="autorizada">Autorizada</option>
+            <option value="pendente">Pendente</option>
+            <option value="processando">Processando</option>
+            <option value="erro">Erro</option>
+            <option value="cancelada">Cancelada</option>
+            <option value="cancelar_solicitado">Cancel. Solicitado</option>
+          </select>
+        </div>
+        <div class="filter-right">
+          <span class="result-count" id="result-count">0 registros</span>
+        </div>
+      </section>
+
+      <!-- Table -->
+      <section class="table-section">
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th class="th-status"></th>
+                <th class="th-fatura">Fatura</th>
+                <th class="th-nfse">NFS-e</th>
+                <th class="th-cliente">Cliente</th>
+                <th class="th-cnpj">CNPJ/CPF</th>
+                <th class="th-valor">Valor</th>
+                <th class="th-data">Emissao</th>
+                <th class="th-chave">Chave de Acesso</th>
+                <th class="th-actions">Arquivos</th>
+              </tr>
+            </thead>
+            <tbody id="table-body">
+              <tr class="tr-empty">
+                <td colspan="9">
+                  <div class="empty-state">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                    <p>Carregando dados...</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Last Update -->
+      <section class="footer-info">
+        <span id="last-update">--</span>
+        <span class="auto-refresh">Auto-refresh: 10s</span>
+      </section>
+    </main>
+    </div>
+  <!-- Tab: Documentacao -->
+  <div id="tab-docs" class="tab-content hidden">
+    <main class="main-content">
+      <div class="doc-container">
+        <h2 class="doc-title">Documentacao Tecnica — Performe+ Fiscal Cloud</h2>
+        <p class="doc-subtitle">SPED NFS-e v1.01 | Middleware Performe+ | Curitiba/PR</p>
+
+        <!-- Arquitetura -->
+        <section class="doc-section">
+          <h3 class="doc-h3" onclick="this.parentElement.classList.toggle('collapsed')">Arquitetura do Middleware</h3>
+          <div class="doc-body">
+            <div class="arch-diagram">
+              <div class="arch-box"><strong>Odoo 19 Online</strong><br>Fatura (account.move)<br>Status: x_performe_nfse_status<br>Botao: Server Action</div>
+              <div class="arch-arrow">XML-RPC polling (15s)</div>
+              <div class="arch-box accent"><strong>Middleware Performe+</strong><br>Express.js + Vercel<br>XML DPS + XMLDSig (A1)<br>mTLS + GZip+Base64</div>
+              <div class="arch-arrow">REST API + mTLS</div>
+              <div class="arch-box"><strong>SEFIN Nacional</strong><br>sefin.nfse.gov.br<br>SPED NFS-e v1.01<br>Producao / Homologacao</div>
+            </div>
+            <p>O middleware opera em <b>polling</b>: a cada 15 segundos, busca faturas com <code>x_performe_nfse_status = 'pendente'</code> no Odoo, gera o XML DPS, assina com certificado A1, envia à SEFIN, e atualiza o Odoo com o resultado.</p>
+          </div>
+        </section>
+
+        <!-- Fluxo Emissao -->
+        <section class="doc-section">
+          <h3 class="doc-h3" onclick="this.parentElement.classList.toggle('collapsed')">Fluxo de Emissao NFS-e (passo a passo)</h3>
+          <div class="doc-body">
+            <ol class="doc-steps">
+              <li><strong>Odoo:</strong> Usuario clica no botao <b>"Emitir NFS-e"</b> (Server Action marca <code>x_performe_nfse_status = 'pendente'</code>)</li>
+              <li><strong>Middleware (polling):</strong> Detecta fatura pendente via XML-RPC</li>
+              <li><strong>Middleware:</strong> Le dados da fatura, empresa, parceiro, produtos e impostos</li>
+              <li><strong>Middleware:</strong> Gera XML DPS v1.01 com todos os campos obrigatorios</li>
+              <li><strong>Middleware:</strong> Assina XML com <b>XMLDSig RSA-SHA256</b> (certificado A1 do Firebase)</li>
+              <li><strong>Middleware:</strong> Comprime XML com GZip, codifica em Base64, envia via POST para SEFIN com mTLS</li>
+              <li><strong>SEFIN:</strong> Valida XML, processa DPS, retorna XML de resposta com chave de acesso e numero</li>
+              <li><strong>Middleware:</strong> Atualiza campos no Odoo (status, numero, chave, protocolo, data, XML)</li>
+              <li><strong>Middleware:</strong> Anexa XML ao chatter da fatura</li>
+              <li><strong>Middleware:</strong> Gera PDF DANFSe (PDFKit com logo Performe+ no PDF) e anexa ao chatter</li>
+            </ol>
+          </div>
+        </section>
+
+        <!-- Fluxo Cancelamento -->
+        <section class="doc-section">
+          <h3 class="doc-h3" onclick="this.parentElement.classList.toggle('collapsed')">Fluxo de Cancelamento NFS-e (passo a passo)</h3>
+          <div class="doc-body">
+            <ol class="doc-steps">
+              <li><strong>Odoo:</strong> Usuario clica em <b>"Cancelar NFS-e"</b> (Server Action marca <code>x_performe_nfse_status = 'cancelar_solicitado'</code>)</li>
+              <li><strong>Middleware (polling):</strong> Detecta fatura com status <code>cancelar_solicitado</code></li>
+              <li><strong>Middleware:</strong> Le a chave de acesso (<code>x_performe_nfse_codigo_verificacao</code>)</li>
+              <li><strong>Middleware:</strong> Gera XML <code>pedRegEvento</code> v1.01 com evento <code>e101101</code></li>
+              <li><strong>Estrutura:</strong> <code>&lt;pedRegEvento&gt; &gt; &lt;infPedReg Id="PRE+chave+101101"&gt; &gt; tpAmb, verAplic, dhEvento, CNPJAutor, chNFSe, e101101</li>
+              <li><strong>e101101:</strong> <code>xDesc</code> = "Cancelamento de NFS-e" (obrigatorio), <code>cMotivo</code> (1/2/9), <code>xMotivo</code> (min 15 chars)</li>
+              <li><strong>Middleware:</strong> Assina <code>infPedReg</code> com XMLDSig RSA-SHA256</li>
+              <li><strong>Middleware:</strong> GZip+Base64, POST para <code>/SefinNacional/nfse/{chave}/eventos</code></li>
+              <li><strong>SEFIN:</strong> Registra evento de cancelamento com data/hora</li>
+              <li><strong>Middleware:</strong> Atualiza Odoo: status = 'cancelada' ou volta para 'autorizada' se falhou</li>
+            </ol>
+          </div>
+        </section>
+
+        <!-- XML DPS -->
+        <section class="doc-section">
+          <h3 class="doc-h3" onclick="this.parentElement.classList.toggle('collapsed')">Estrutura do XML DPS v1.01</h3>
+          <div class="doc-body">
+            <pre class="doc-code">&lt;DPS xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01"&gt;
+  &lt;infDPS Id="NFS41069022..."&gt;
+    &lt;ideDPS&gt;
+      &lt;nDPS&gt;84&lt;/nDPS&gt;  (numero controlado pelo emitente)
+      &lt;serie&gt;1&lt;/serie&gt;
+      &lt;dhEmi&gt;2026-08-31T09:00:00-03:00&lt;/dhEmi&gt;
+      &lt;dCompet&gt;2026-08-31&lt;/dCompet&gt;
+      &lt;tpAmb&gt;1&lt;/tpAmb&gt;  (1=producao, 2=homologacao)
+      &lt;verAplic&gt;performemais_1.0.0&lt;/verAplic&gt;
+      &lt;opSimpNac&gt;3&lt;/opSimpNac&gt;  (3=Simples Nacional)
+      &lt;regApTribSN&gt;1&lt;/regApTribSN&gt;
+      &lt;cLocPrestacao&gt;4106902&lt;/cLocPrestacao&gt;  (IBGE Curitiba)
+    &lt;/ideDPS&gt;
+    &lt;emit&gt;
+      &lt;CNPJ&gt;05272112000115&lt;/CNPJ&gt;
+      &lt;xNome&gt;PERFORME+ LTDA&lt;/xNome&gt;
+      &lt;enderNac&gt;
+        &lt;xLgr&gt;AV LONDRINA&lt;/xLgr&gt;  &lt;nro&gt;1302&lt;/nro&gt;
+        &lt;xBairro&gt;CENTRO&lt;/xBairro&gt;  &lt;CEP&gt;83255000&lt;/CEP&gt;
+        &lt;cMun&gt;4119652&lt;/cMun&gt;  (IBGE Pontal do Parana)
+      &lt;/enderNac&gt;
+      &lt;email&gt;contato@performemais.com.br&lt;/email&gt;
+    &lt;/emit&gt;
+    &lt;toma&gt;  (dados do tomador)
+    &lt;serv&gt;
+      &lt;cTribNac&gt;080201&lt;/cTribNac&gt;
+      &lt;cNBS&gt;122051900&lt;/cNBS&gt;
+      &lt;xDescServ&gt;Descricao do servico&lt;/xDescServ&gt;
+    &lt;/serv&gt;
+    &lt;valores&gt;
+      &lt;vServ&gt;3500.00&lt;/vServ&gt;
+      &lt;vDed&gt;0.00&lt;/vDed&gt;
+      &lt;vDescIncond&gt;0.00&lt;/vDescIncond&gt;
+      &lt;vDescCond&gt;0.00&lt;/vDescCond&gt;
+      &lt;tribISSQN&gt;
+        &lt;tpRetISSQN&gt;1&lt;/tpRetISSQN&gt;  (1=Nao retido)
+        &lt;cLocIncid&gt;4106902&lt;/cLocIncid&gt;
+      &lt;/tribISSQN&gt;
+      &lt;pAliq&gt;5.00&lt;/pAliq&gt;
+      &lt;vISSQN&gt;0.00&lt;/vISSQN&gt;  (Simples Nacional: ST)
+    &lt;/valores&gt;
+  &lt;/infDPS&gt;
+  &lt;Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"&gt;...&lt;/Signature&gt;
+&lt;/DPS&gt;</pre>
+          </div>
+        </section>
+
+        <!-- XML Cancelamento -->
+        <section class="doc-section">
+          <h3 class="doc-h3" onclick="this.parentElement.classList.toggle('collapsed')">Estrutura do XML Cancelamento (pedRegEvento v1.01)</h3>
+          <div class="doc-body">
+            <pre class="doc-code">&lt;pedRegEvento xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01"&gt;
+  &lt;infPedReg Id="PRE41069022...41101101"&gt;  (59 chars: PRE + chave50 + evento6)
+    &lt;tpAmb&gt;1&lt;/tpAmb&gt;
+    &lt;verAplic&gt;performemais_1.0.0&lt;/verAplic&gt;
+    &lt;dhEvento&gt;2026-08-31T12:09:34-03:00&lt;/dhEvento&gt;
+    &lt;CNPJAutor&gt;06696225000100&lt;/CNPJAutor&gt;
+    &lt;chNFSe&gt;41069022...&lt;/chNFSe&gt;  (50 digitos)
+    &lt;e101101&gt;
+      &lt;xDesc&gt;Cancelamento de NFS-e&lt;/xDesc&gt;  (texto EXATO obrigatorio)
+      &lt;cMotivo&gt;9&lt;/cMotivo&gt;  (1=Erro na emissao, 2=Servico nao prestado, 9=Outros)
+      &lt;xMotivo&gt;Cancelamento solicitado pelo emitente via Odoo&lt;/xMotivo&gt;  (min 15, max 255 chars)
+    &lt;/e101101&gt;
+  &lt;/infPedReg&gt;
+  &lt;Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"&gt;...&lt;/Signature&gt;
+&lt;/pedRegEvento&gt;</pre>
+          </div>
+        </section>
+
+        <!-- API Endpoints -->
+        <section class="doc-section">
+          <h3 class="doc-h3" onclick="this.parentElement.classList.toggle('collapsed')">API Endpoints</h3>
+          <div class="doc-body">
+            <table class="doc-table">
+              <thead><tr><th>Metodo</th><th>Rota</th><th>Descricao</th></tr></thead>
+              <tbody>
+                <tr><td>GET</td><td><code>/health</code></td><td>Health check do middleware</td></tr>
+                <tr><td>POST</td><td><code>/api/v1/nfse/certificado</code></td><td>Upload certificado A1 (pfxBase64 + senha)</td></tr>
+                <tr><td>GET</td><td><code>/api/v1/nfse/certificado</code></td><td>Status do certificado</td></tr>
+                <tr><td>POST</td><td><code>/api/v1/nfse/certificado/logo</code></td><td>Upload logo do cliente (logoBase64) - aparece no DANFSe</td></tr>
+                <tr><td>POST</td><td><code>/api/v1/nfse/process-pending</code></td><td>Acionar polling manualmente</td></tr>
+                <tr><td>POST</td><td><code>/api/v1/nfse/re-attach</code></td><td>Re-anexar PDF+XML (move_id ou nfse_numero)</td></tr>
+                <tr><td>POST</td><td><code>/api/v1/nfse/cancelar</code></td><td>Cancelar NFS-e por move_id</td></tr>
+                <tr><td>GET</td><td><code>/api/v1/nfse/dashboard</code></td><td>Dados completos do painel</td></tr>
+                <tr><td>GET</td><td><code>/api/v1/nfse/dashboard/:id/pdf</code></td><td>Download PDF DANFSe</td></tr>
+                <tr><td>GET</td><td><code>/api/v1/nfse/dashboard/:id/xml</code></td><td>Download XML</td></tr>
+                <tr><td>GET</td><td><code>/api/v1/nfse/dashboard/:id/consultar</code></td><td>Consultar NFS-e na SEFIN</td></tr>
+                <tr><td>GET</td><td><code>/api/v1/nfse/admin/campos/status</code></td><td>Verificar campos x_performe_*</td></tr>
+                <tr><td>POST</td><td><code>/api/v1/nfse/admin/campos/criar</code></td><td>Criar campos ausentes</td></tr>
+                <tr><td>POST</td><td><code>/api/v1/nfse/admin/campos/server-actions</code></td><td>Criar Server Actions</td></tr>
+                <tr><td>GET</td><td><code>/api/v1/nfse/admin/impostos/produtos</code></td><td>Listar produtos com impostos</td></tr>
+                <tr><td>POST</td><td><code>/api/v1/nfse/admin/impostos/push</code></td><td>Push impostos ao Odoo</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Erros Comuns -->
+        <section class="doc-section">
+          <h3 class="doc-h3" onclick="this.parentElement.classList.toggle('collapsed')">Erros Comuns e Solucoes</h3>
+          <div class="doc-body">
+            <table class="doc-table">
+              <thead><tr><th>Erro</th><th>Causa</th><th>Solucao</th></tr></thead>
+              <tbody>
+                <tr><td><code>E1235</code></td><td>XML fora do esquema XSD v1.01</td><td>Verificar namespace, versao, elementos obrigatorios</td></tr>
+                <tr><td><code>E100</code></td><td>Erro geral de processamento</td><td>Verificar campos obrigatorios do DPS</td></tr>
+                <tr><td>PDF 503</td><td>Endpoint ADN suspenso (NT 008/2026)</td><td>Usar PDF gerado localmente (PDFKit Performe+)</td></tr>
+                <tr><td>Auth falhou</td><td>API Key Odoo invalida</td><td>Verificar ODOO_USER e ODOO_API_KEY no Vercel</td></tr>
+                <tr><td>Certificado nao encontrado</td><td>Firebase sem certificado</td><td>POST /api/v1/nfse/certificado com pfxBase64</td></tr>
+                <tr><td>Logo nao aparece</td><td>Nao foi feito upload</td><td>POST /api/v1/nfse/certificado/logo com logoBase64</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Variaveis de Ambiente -->
+        <section class="doc-section">
+          <h3 class="doc-h3" onclick="this.parentElement.classList.toggle('collapsed')">Variaveis de Ambiente (Vercel)</h3>
+          <div class="doc-body">
+            <table class="doc-table">
+              <thead><tr><th>Variavel</th><th>Exemplo</th><th>Descricao</th></tr></thead>
+              <tbody>
+                <tr><td><code>API_KEY</code></td><td>performe-nfse-2026-s3cr3t-k3y</td><td>Chave de acesso ao painel</td></tr>
+                <tr><td><code>ODOO_ENABLED</code></td><td>1</td><td>Habilita integracao Odoo</td></tr>
+                <tr><td><code>ODOO_URL</code></td><td>https://empresa.odoo.com</td><td>URL do Odoo</td></tr>
+                <tr><td><code>ODOO_DB</code></td><td>empresa-production-...</td><td>Database Odoo</td></tr>
+                <tr><td><code>ODOO_USER</code></td><td>admin@empresa.com</td><td>Email de login</td></tr>
+                <tr><td><code>ODOO_API_KEY</code></td><td>abc123...</td><td>API Key do usuario</td></tr>
+                <tr><td><code>NFSE_TP_AMB</code></td><td>1</td><td>1=Producao, 2=Homologacao</td></tr>
+                <tr><td><code>NFSE_IM</code></td><td>080212854094</td><td>Inscricao Municipal</td></tr>
+                <tr><td><code>NFSE_ALIQUOTA_ISS</code></td><td>5.00</td><td>Aliquota ISS padrao (%)</td></tr>
+                <tr><td><code>FIREBASE_PROJECT_ID</code></td><td>nfseperforme</td><td>Projeto Firebase</td></tr>
+                <tr><td><code>FIREBASE_PRIVATE_KEY</code></td><td>-----BEGIN PRIVATE KEY-----</td><td>Chave privada do service account</td></tr>
+                <tr><td><code>FIREBASE_CLIENT_EMAIL</code></td><td>...@nfseperforme.iam.gserviceaccount.com</td><td>Email do service account</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Tab: Impostos -->
+  <div id="tab-impostos" class="tab-content hidden">
+    <main class="main-content">
+      <div class="doc-container">
+        <h2 class="doc-title">Configurador de Impostos</h2>
+        <p class="doc-subtitle">Configure os impostos e envie diretamente ao Odoo</p>
+
+        <!-- Config Atual -->
+        <section class="doc-section">
+          <h3 class="doc-h3">Configuracao Atual do Middleware</h3>
+          <div class="doc-body" id="impostos-config-atual">
+            <p>Carregando...</p>
+          </div>
+        </section>
+
+        <!-- IM Empresa -->
+        <section class="doc-section">
+          <h3 class="doc-h3">Inscricao Municipal da Empresa</h3>
+          <div class="doc-body">
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+              <input type="text" id="inp-im-empresa" placeholder="Ex: 080212854094" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--fg);width:200px">
+              <button class="btn-primary" id="btn-salvar-im" style="padding:8px 16px;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:600">Salvar IM no Odoo</button>
+              <span id="im-salvar-status" style="color:var(--muted)"></span>
+            </div>
+          </div>
+        </section>
+
+        <!-- IBS/CBS (NT 004/2025 v2.0) -->
+        <section class="doc-section">
+          <h3 class="doc-h3" style="display:flex;align-items:center;gap:8px">
+            IBS / CBS
+            <span style="font-size:0.68rem;padding:2px 8px;border-radius:10px;background:rgba(234,179,8,0.15);color:#eab308;font-weight:600">NT 004/2025</span>
+            <span id="ibs-cbs-badge" style="font-size:0.65rem;padding:2px 8px;border-radius:10px;background:rgba(16,185,129,0.15);color:var(--accent);font-weight:600">OBG desde 01/01/2026</span>
+          </h3>
+          <div class="doc-body">
+            <p class="doc-hint" style="margin-bottom:14px">Campos obrigatorios na NFS-e Nacional desde 01/01/2026 (NT 004/2025 v2.0). Periodo de transicao 2026-2032: ISS+IBS coexistem, PIS/COFINS+CBS coexistem. Altere aqui sem precisar de novo deploy.</p>
+
+            <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:600;color:var(--fg)">
+                <input type="checkbox" id="ibs-cbs-habilitado" checked style="width:18px;height:18px;accent-color:var(--accent)">
+                Incluir IBS/CBS no XML
+              </label>
+              <span id="ibs-cbs-status" style="color:var(--muted);font-size:0.8rem"></span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px" id="ibs-cbs-form">
+              <!-- CINOP -->
+              <div>
+                <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:4px">CINOP — Natureza da Operacao</label>
+                <select id="trib-cinop" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--fg);font-size:0.85rem">
+                  <option value="01">01 — Prestacao de servicos</option>
+                  <option value="02">02 — Venda de mercadorias</option>
+                  <option value="03">03 — Venda de mercadorias com servicos</option>
+                  <option value="04">04 — Servicos com fornecimento de mercadorias</option>
+                </select>
+              </div>
+              <!-- cClassTrib -->
+              <div>
+                <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:4px">cClassTrib — Classificacao Tributaria</label>
+                <select id="trib-cclass" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--fg);font-size:0.85rem">
+                  <option value="01">01 — Contribuinte</option>
+                  <option value="02">02 — Nao contribuinte</option>
+                </select>
+              </div>
+              <!-- CST IBS -->
+              <div>
+                <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:4px">CST — IBS (Codigo Situacao Tributaria)</label>
+                <select id="trib-cst-ibs" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--fg);font-size:0.85rem">
+                  <option value="00">00 — Nao tributada</option>
+                  <option value="10">10 — Isenta</option>
+                  <option value="20">20 — Nao incidencia</option>
+                  <option value="30">30 — Suspensa</option>
+                  <option value="40">40 — Substituicao tributaria</option>
+                  <option value="50">50 — Diferimento</option>
+                  <option value="60">60 — Cobranca anterior por subst.</option>
+                  <option value="70">70 — Com reducao de base de calculo</option>
+                  <option value="90">90 — Outras</option>
+                  <option value="91" selected>91 — Trib. aliquota basica (SN)</option>
+                  <option value="99">99 — Outras</option>
+                </select>
+              </div>
+              <!-- CST CBS -->
+              <div>
+                <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:4px">CST — CBS (Codigo Situacao Tributaria)</label>
+                <select id="trib-cst-cbs" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--fg);font-size:0.85rem">
+                  <option value="00">00 — Nao tributada</option>
+                  <option value="10">10 — Isenta</option>
+                  <option value="20">20 — Nao incidencia</option>
+                  <option value="30">30 — Suspensa</option>
+                  <option value="40">40 — Substituicao tributaria</option>
+                  <option value="50">50 — Diferimento</option>
+                  <option value="60">60 — Cobranca anterior por subst.</option>
+                  <option value="70">70 — Com reducao de base de calculo</option>
+                  <option value="90">90 — Outras</option>
+                  <option value="91" selected>91 — Trib. aliquota basica (SN)</option>
+                  <option value="99">99 — Outras</option>
+                </select>
+              </div>
+              <!-- pIBS -->
+              <div>
+                <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:4px">pIBS — Aliquota IBS (%)</label>
+                <input type="number" step="0.01" min="0" max="100" id="trib-pibs" value="0.00" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--fg);font-size:0.85rem" placeholder="0.00">
+              </div>
+              <!-- pCBS -->
+              <div>
+                <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:4px">pCBS — Aliquota CBS (%)</label>
+                <input type="number" step="0.01" min="0" max="100" id="trib-pcbs" value="0.00" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--fg);font-size:0.85rem" placeholder="0.00">
+              </div>
+            </div>
+
+            <div style="margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <button class="btn-primary" id="btn-salvar-trib" style="padding:10px 24px;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:600;font-size:0.85rem">Salvar Configuracao IBS/CBS</button>
+              <span id="trib-salvar-status" style="font-size:0.82rem"></span>
+            </div>
+
+            <!-- Preview do XML gerado -->
+            <details style="margin-top:16px">
+              <summary style="cursor:pointer;color:var(--text-secondary);font-size:0.82rem;font-weight:600">Preview do bloco XML IBS/CBS gerado</summary>
+              <pre id="ibs-cbs-xml-preview" class="doc-code" style="margin-top:8px;font-size:0.78rem;max-height:200px;overflow:auto">Carregando...</pre>
+            </details>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Tab: Setup -->
+  <div id="tab-setup" class="tab-content hidden">
+    <main class="main-content">
+      <div class="doc-container">
+        <h2 class="doc-title">Configuracao Inicial</h2>
+        <p class="doc-subtitle">Upload do certificado A1 e logo — pronto para clonar para outro cliente</p>
+
+        <!-- Certificado A1 -->
+        <section class="doc-section">
+          <h3 class="doc-h3" style="cursor:default">Certificado Digital A1 (PFX)</h3>
+          <div class="doc-body">
+            <div id="cert-status-setup" style="margin-bottom:12px;padding:10px;background:var(--bg-input);border-radius:8px;border:1px solid var(--border)">
+              <span style="color:var(--text-muted)">Verificando...</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div>
+                <label style="font-size:0.78rem;color:var(--text-muted);display:block;margin-bottom:4px">Arquivo PFX (.pfx)</label>
+                <input type="file" id="inp-cert-file" accept=".pfx,.p12" style="color:var(--text-secondary);font-size:0.82rem">
+              </div>
+              <div>
+                <label style="font-size:0.78rem;color:var(--text-muted);display:block;margin-bottom:4px">Senha do Certificado</label>
+                <input type="password" id="inp-cert-senha" placeholder="Digite a senha do PFX" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--fg);width:300px">
+              </div>
+              <button id="btn-upload-cert" style="padding:10px 24px;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:600;font-size:0.85rem;align-self:flex-start">Enviar Certificado</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Logo -->
+        <section class="doc-section">
+          <h3 class="doc-h3" style="cursor:default">Logo da Empresa (DANFSe)</h3>
+          <div class="doc-body">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div>
+                <label style="font-size:0.78rem;color:var(--text-muted);display:block;margin-bottom:4px">Imagem da Logo (PNG recomendado)</label>
+                <input type="file" id="inp-logo-file" accept=".png,.jpg,.jpeg,.webp" style="color:var(--text-secondary);font-size:0.82rem">
+              </div>
+              <button id="btn-upload-logo" style="padding:10px 24px;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:600;font-size:0.85rem;align-self:flex-start">Enviar Logo</button>
+            </div>
+            <div id="logo-preview" style="margin-top:12px"></div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Tab: Campos Odoo -->
+  <div id="tab-campos" class="tab-content hidden">
+    <main class="main-content">
+      <div class="doc-container">
+        <h2 class="doc-title">Campos & Server Actions — Odoo</h2>
+        <p class="doc-subtitle">Verifique, crie campos e server actions necessarios para o emissor NFS-e</p>
+
+        <section class="doc-section">
+          <h3 class="doc-h3">Status dos Campos x_performe_*</h3>
+          <div class="doc-body">
+            <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn-primary" id="btn-verificar-campos" style="padding:8px 16px;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:600">Verificar Campos</button>
+              <button class="btn-primary" id="btn-criar-campos" style="padding:8px 16px;border-radius:6px;border:none;background:#2563eb;color:#fff;cursor:pointer;font-weight:600">Criar Campos Ausentes</button>
+              <button class="btn-primary" id="btn-criar-actions" style="padding:8px 16px;border-radius:6px;border:none;background:#7c3aed;color:#fff;cursor:pointer;font-weight:600">Criar Server Actions</button>
+            </div>
+            <div id="campos-status-lista">
+              <p>Clique em "Verificar Campos" para checar quais campos x_performe_* ja existem no Odoo.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="doc-section">
+          <h3 class="doc-h3">Server Actions Prontas</h3>
+          <div class="doc-body">
+            <p>As Server Actions abaixo sao criadas automaticamente no Odoo:</p>
+            <div class="sa-card">
+              <div class="sa-name">Performe+: Solicitar Emissao NFS-e</div>
+              <div class="sa-detail">Modelo: <code>account.move</code> | Acao: Executar codigo Python</div>
+              <pre class="doc-code">if record.state != 'posted':
+    record.action_post()
+record.x_performe_nfse_status = 'pendente'
+record.x_performe_nfse_erro = False
+record.x_performe_nfse_mensagem = False</pre>
+            </div>
+            <div class="sa-card">
+              <div class="sa-name">Performe+: Solicitar Cancelamento NFS-e</div>
+              <div class="sa-detail">Modelo: <code>account.move</code> | Acao: Executar codigo Python</div>
+              <pre class="doc-code">if record.x_performe_nfse_status == 'autorizada':
+    record.x_performe_nfse_status = 'cancelar_solicitado'
+else:
+    raise UserWarning('Apenas NFS-e autorizadas podem ser canceladas.')</pre>
+            </div>
+            <p class="doc-hint">Apos criar, adicione os botoes na view de fatura manualmente ou via vista herdada (inherit view).</p>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  </div>
+  <!-- Modal: XML Viewer -->
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-title">XML da NFS-e</h2>
+        <div class="modal-actions">
+          <button class="btn-sm" id="modal-copy">Copiar</button>
+          <button class="btn-icon" id="modal-close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <pre id="modal-xml-content"></pre>
+      </div>
+      <div class="modal-footer">
+        <span id="modal-info"></span>
+        <div class="modal-buttons">
+          <button class="btn-sm" id="modal-download-xml">Download XML</button>
+          <button class="btn-sm btn-primary" id="modal-download-pdf">Download PDF</button>
+          <button class="btn-sm" id="modal-consultar-sefin">Consultar gov.br</button>
+          <button class="btn-sm" id="modal-reattach" style="color:var(--warning)">Re-anexar Odoo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: SEFIN Consult Result -->
+  <div id="sefin-result-overlay" class="modal-overlay hidden">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h2>Consulta gov.br / SEFIN</h2>
+        <button class="btn-icon" id="sefin-result-close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-body" id="sefin-result-body">
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
