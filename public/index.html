@@ -8,34 +8,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%2310B981'/><text x='16' y='22' font-family='Arial' font-size='13' font-weight='700' fill='white' text-anchor='middle'>P+</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>//</text></svg>">
 </head>
 <body>
   <!-- Auth Screen -->
   <div id="auth-screen" class="auth-screen">
     <div class="auth-card">
       <div class="auth-logo">
-        <svg class="auth-logo-svg" viewBox="0 0 360 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Performe+ Fiscal Cloud">
-          <defs>
-            <linearGradient id="auth-pmark" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#10B981"/>
-              <stop offset="100%" stop-color="#3B82F6"/>
-            </linearGradient>
-            <filter id="auth-glow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="6" result="blur"/>
-              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-          </defs>
-          <circle cx="48" cy="48" r="40" fill="url(#auth-pmark)" filter="url(#auth-glow)" opacity="0.35"/>
-          <circle cx="48" cy="48" r="40" fill="url(#auth-pmark)"/>
-          <circle cx="48" cy="48" r="40" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
-          <text x="48" y="61" font-family="Inter, sans-serif" font-size="34" font-weight="700" fill="#F1F5F9" text-anchor="middle" letter-spacing="-1">P+</text>
-          <text x="108" y="55" font-family="Inter, sans-serif" font-size="32" font-weight="700" letter-spacing="-0.6">
-            <tspan fill="#F1F5F9">Performe</tspan><tspan fill="#10B981">+</tspan>
-          </text>
-          <line x1="108" y1="68" x2="126" y2="68" stroke="#10B981" stroke-width="2.5"/>
-          <text x="134" y="72" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="#94A3B8" letter-spacing="3.8">FISCAL CLOUD</text>
-        </svg>
         <img src="/logo-performe.png" alt="Performe+" class="auth-logo-img">
       </div>
       <h1>Performe+ Fiscal Cloud</h1>
@@ -54,21 +33,8 @@
     <header class="topbar">
       <div class="topbar-left">
         <div class="logo">
-          <svg class="logo-svg" viewBox="0 0 210 40" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Performe+">
-            <defs>
-              <linearGradient id="tb-pmark" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#10B981"/>
-                <stop offset="100%" stop-color="#3B82F6"/>
-              </linearGradient>
-            </defs>
-            <circle cx="20" cy="20" r="16" fill="url(#tb-pmark)"/>
-            <circle cx="20" cy="20" r="16" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
-            <text x="20" y="26" font-family="Inter, sans-serif" font-size="14" font-weight="700" fill="#F1F5F9" text-anchor="middle" letter-spacing="-0.5">P+</text>
-            <text x="44" y="26" font-family="Inter, sans-serif" font-size="18" font-weight="700" letter-spacing="-0.4">
-              <tspan fill="#F1F5F9">Performe</tspan><tspan fill="#10B981">+</tspan>
-            </text>
-          </svg>
           <img src="/logo-performe.png" alt="Performe+" class="topbar-logo-img">
+          <span class="logo-text">Performe+ Fiscal Cloud</span>
         </div>
         <div class="topbar-env" id="env-badge">HOMOLOGACAO</div>
       </div>
@@ -110,7 +76,7 @@
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
           </div>
           <div class="kpi-data">
-            <span class="kpi-value-num" id="kpi-total">--</span>
+            <span class="kpi-value" id="kpi-total">--</span>
             <span class="kpi-label">Total NFS-e</span>
           </div>
         </div>
@@ -119,7 +85,7 @@
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
           </div>
           <div class="kpi-data">
-            <span class="kpi-value-num" id="kpi-autorizadas">--</span>
+            <span class="kpi-value" id="kpi-autorizadas">--</span>
             <span class="kpi-label">Autorizadas</span>
           </div>
         </div>
@@ -128,7 +94,7 @@
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
           </div>
           <div class="kpi-data">
-            <span class="kpi-value-num" id="kpi-pendentes">--</span>
+            <span class="kpi-value" id="kpi-pendentes">--</span>
             <span class="kpi-label">Pendentes</span>
           </div>
         </div>
@@ -137,7 +103,7 @@
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
           </div>
           <div class="kpi-data">
-            <span class="kpi-value-num" id="kpi-erros">--</span>
+            <span class="kpi-value" id="kpi-erros">--</span>
             <span class="kpi-label">Erros</span>
           </div>
         </div>
@@ -146,7 +112,7 @@
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
           </div>
           <div class="kpi-data">
-            <span class="kpi-value-num" id="kpi-canceladas">--</span>
+            <span class="kpi-value" id="kpi-canceladas">--</span>
             <span class="kpi-label">Canceladas</span>
           </div>
         </div>
@@ -155,7 +121,7 @@
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
           </div>
           <div class="kpi-data">
-            <span class="kpi-value-num" id="kpi-valor">--</span>
+            <span class="kpi-value" id="kpi-valor">--</span>
             <span class="kpi-label">Valor Autorizado</span>
           </div>
         </div>
@@ -203,7 +169,7 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th class="th-status">Status</th>
+                <th class="th-status"></th>
                 <th class="th-fatura">Fatura</th>
                 <th class="th-nfse">NFS-e</th>
                 <th class="th-cliente">Cliente</th>
@@ -313,12 +279,13 @@
       &lt;cLocPrestacao&gt;4106902&lt;/cLocPrestacao&gt;  (IBGE Curitiba)
     &lt;/ideDPS&gt;
     &lt;emit&gt;
-      &lt;CNPJ&gt;05272112000115&lt;/CNPJ&gt;
+      &lt;CNPJ&gt;06696225000100&lt;/CNPJ&gt;
+      &lt;IM&gt;170110079908&lt;/IM&gt;
       &lt;xNome&gt;PERFORME+ LTDA&lt;/xNome&gt;
       &lt;enderNac&gt;
-        &lt;xLgr&gt;AV LONDRINA&lt;/xLgr&gt;  &lt;nro&gt;1302&lt;/nro&gt;
-        &lt;xBairro&gt;CENTRO&lt;/xBairro&gt;  &lt;CEP&gt;83255000&lt;/CEP&gt;
-        &lt;cMun&gt;4119652&lt;/cMun&gt;  (IBGE Pontal do Parana)
+        &lt;xLgr&gt;RUA BOM JESUS&lt;/xLgr&gt;  &lt;nro&gt;212&lt;/nro&gt;
+        &lt;xBairro&gt;JUVEVE&lt;/xBairro&gt;  &lt;CEP&gt;80035010&lt;/CEP&gt;
+        &lt;cMun&gt;4106902&lt;/cMun&gt;  (IBGE)
       &lt;/enderNac&gt;
       &lt;email&gt;contato@performemais.com.br&lt;/email&gt;
     &lt;/emit&gt;
@@ -430,9 +397,9 @@
                 <tr><td><code>NFSE_TP_AMB</code></td><td>1</td><td>1=Producao, 2=Homologacao</td></tr>
                 <tr><td><code>NFSE_IM</code></td><td>080212854094</td><td>Inscricao Municipal</td></tr>
                 <tr><td><code>NFSE_ALIQUOTA_ISS</code></td><td>5.00</td><td>Aliquota ISS padrao (%)</td></tr>
-                <tr><td><code>FIREBASE_PROJECT_ID</code></td><td>nfseperforme</td><td>Projeto Firebase</td></tr>
+                <tr><td><code>FIREBASE_PROJECT_ID</code></td><td>performe-nfse-prod</td><td>Projeto Firebase</td></tr>
                 <tr><td><code>FIREBASE_PRIVATE_KEY</code></td><td>-----BEGIN PRIVATE KEY-----</td><td>Chave privada do service account</td></tr>
-                <tr><td><code>FIREBASE_CLIENT_EMAIL</code></td><td>...@nfseperforme.iam.gserviceaccount.com</td><td>Email do service account</td></tr>
+                <tr><td><code>FIREBASE_CLIENT_EMAIL</code></td><td>...@performe-nfse-prod.iam.gserviceaccount.com</td><td>Email do service account</td></tr>
               </tbody>
             </table>
           </div>
