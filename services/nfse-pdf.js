@@ -38,19 +38,8 @@ async function ensureLogo() {
   if (logoLoaded) return LOGO_BUF;
   logoLoaded = true;
 
-  // 1) Arquivo local (assets/logo-performe.jpg) — vem via git deploy
-  try {
-    const logoPath = path.join(__dirname, '..', 'assets', 'logo-performe.jpg');
-    if (fs.existsSync(logoPath)) {
-      LOGO_BUF = fs.readFileSync(logoPath);
-      console.log('[NFSE-PDF] Logo carregada do arquivo local: ' + LOGO_BUF.length + ' bytes');
-      return LOGO_BUF;
-    }
-  } catch (e) {
-    console.warn('[NFSE-PDF] Erro ao carregar logo local: ' + e.message);
-  }
-
-  // 2) Firebase Firestore (persiste entre deploys)
+  // 1) Firebase Firestore (logo dinamica via painel admin - PRIORIDADE MAXIMA)
+  //    Permite trocar a logo sem redeploy - via POST /api/v1/nfse/certificado/logo
   try {
     const fbLogo = await loadLogoFromFirebase();
     if (fbLogo && fbLogo.length > 100) {
@@ -62,7 +51,19 @@ async function ensureLogo() {
     console.warn('[NFSE-PDF] Erro ao carregar logo do Firebase: ' + e.message);
   }
 
-  // 3) URL (variavel de ambiente do Vercel)
+  // 2) Arquivo local (assets/logo-performe.jpg) — fallback, vem via git deploy
+  try {
+    const logoPath = path.join(__dirname, '..', 'assets', 'logo-performe.jpg');
+    if (fs.existsSync(logoPath)) {
+      LOGO_BUF = fs.readFileSync(logoPath);
+      console.log('[NFSE-PDF] Logo carregada do arquivo local (fallback): ' + LOGO_BUF.length + ' bytes');
+      return LOGO_BUF;
+    }
+  } catch (e) {
+    console.warn('[NFSE-PDF] Erro ao carregar logo local: ' + e.message);
+  }
+
+  // 3) URL (variavel de ambiente - ultimo recurso)
   const logoUrl = process.env.PERFORME_LOGO_URL || process.env.ODOO_LOGO_URL || '';
   if (logoUrl) {
     try {
@@ -79,7 +80,7 @@ async function ensureLogo() {
     }
   }
 
-  console.warn('[NFSE-PDF] Nenhuma logo encontrada (local, Firebase ou URL).');
+  console.warn('[NFSE-PDF] Nenhuma logo encontrada (Firebase, local ou URL).');
   return LOGO_BUF;
 }
 

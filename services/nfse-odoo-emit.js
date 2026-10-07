@@ -694,15 +694,13 @@ async function emitirNfseOdoo(client, db, uid, moveId) {
 
     await safeWriteMove(client, db, uid, moveId, updateData);
 
-    const msgBody = '<div style="background:#dcfce7;border-left:4px solid #16a34a;padding:12px;margin:8px 0;border-radius:4px">' +
-      '<b style="color:#15803d">✓ NFS-e Emitida com Sucesso!</b><br/>' +
-      '<b>Número:</b> ' + (resultado.nNFSe || proximoNumero) + '<br/>' +
-      '<b>Chave de Acesso:</b> ' + (resultado.chaveAcesso || '-') + '<br/>' +
-      '<b>DFSe:</b> ' + (resultado.nDFSe || '-') + '<br/>' +
-      '<b>IdDPS:</b> ' + (resultado.idDps || '-') + '<br/>' +
-      '<b>Ambiente:</b> ' + (config.nfse.tp_amb === 1 ? 'PRODUÇÃO' : 'HOMOLOGAÇÃO') + '<br/>' +
-      (resultado.chaveAcesso ? '<br/><a href="https://adn.nfse.gov.br/danfse/' + resultado.chaveAcesso + '" target="_blank">📄 Ver DANFSe oficial</a>' : '') +
-      '</div>';
+    const msgBody = '✓ NFS-e Emitida com Sucesso!\n' +
+      'Número: ' + (resultado.nNFSe || proximoNumero) + '\n' +
+      'Chave de Acesso: ' + (resultado.chaveAcesso || '-') + '\n' +
+      'DFSe: ' + (resultado.nDFSe || '-') + '\n' +
+      'IdDPS: ' + (resultado.idDps || '-') + '\n' +
+      'Ambiente: ' + (config.nfse.tp_amb === 1 ? 'PRODUÇÃO' : 'HOMOLOGAÇÃO') +
+      (resultado.chaveAcesso ? '\n\nLink DANFSe oficial: https://adn.nfse.gov.br/danfse/' + resultado.chaveAcesso : '');
     await postarMensagemChatter(client, db, uid, 'account.move', moveId, msgBody, 'NFS-e Emitida com Sucesso');
 
     console.log('[NFSE-EMIT] NFS-e ' + (resultado.nNFSe || proximoNumero) + ' autorizada para ' + move.name);
@@ -807,13 +805,11 @@ async function safeUpdateError(client, db, uid, moveId, errMsg) {
     const codigoMatch = errMsg.match(/(?:E\d{4}|cStat=\d+)/);
     const codigoBadge = codigoMatch ? codigoMatch[0] : 'ERRO';
 
-    const msgBody = '<div style="background:#fef2f2;border-left:4px solid #dc2626;padding:12px;margin:8px 0;border-radius:4px">' +
-      '<b style="color:#b91c1c">✗ Erro na Emissão de NFS-e</b><br/>' +
-      '<b>Código:</b> <code style="background:#fee2e2;padding:2px 6px;border-radius:3px">' + codigoBadge + '</code><br/>' +
-      '<b>Mensagem:</b> ' + errMsg.substring(0, 800).replace(/</g, '&lt;') + '<br/>' +
-      '<b>Ambiente:</b> ' + (config.nfse.tp_amb === 1 ? 'PRODUÇÃO' : 'HOMOLOGAÇÃO') + '<br/>' +
-      '<b>Próximo passo:</b> Corrija o problema e clique novamente em "Emitir NFS-e"' +
-      '</div>';
+    const msgBody = '✗ Erro na Emissão de NFS-e\n' +
+      'Código: ' + codigoBadge + '\n' +
+      'Mensagem: ' + errMsg.substring(0, 800) + '\n' +
+      'Ambiente: ' + (config.nfse.tp_amb === 1 ? 'PRODUÇÃO' : 'HOMOLOGAÇÃO') + '\n' +
+      'Próximo passo: Corrija o problema e clique novamente em "Emitir NFS-e"';
     await postarMensagemChatter(client, db, uid, 'account.move', moveId, msgBody, 'Erro na Emissão de NFS-e');
   } catch (e) {
     console.error('[NFSE-EMIT] Falha ao registrar erro:', e.message);
@@ -925,12 +921,10 @@ async function processarCancelamentosSolicitados(client, db, uid) {
           });
           await postarMensagemChatter(
             client, db, uid, 'account.move', moveId,
-            '<div style="background:#dcfce7;border-left:4px solid #16a34a;padding:12px;margin:8px 0;border-radius:4px">' +
-            '<b style="color:#15803d">✓ NFS-e Cancelada com Sucesso</b><br/>' +
-            '<b>Justificativa:</b> Cancelamento solicitado pelo emitente via Odoo<br/>' +
-            '<b>Resposta SEFIN:</b> ' + (resultado.xMotivo || '') + '<br/>' +
-            '<b>Ambiente:</b> ' + (config.nfse.tp_amb === 1 ? 'PRODUÇÃO' : 'HOMOLOGAÇÃO') +
-            '</div>',
+            '✓ NFS-e Cancelada com Sucesso\n' +
+            'Justificativa: Cancelamento solicitado pelo emitente via Odoo\n' +
+            'Resposta SEFIN: ' + (resultado.xMotivo || '') + '\n' +
+            'Ambiente: ' + (config.nfse.tp_amb === 1 ? 'PRODUÇÃO' : 'HOMOLOGAÇÃO'),
             'NFS-e Cancelada com Sucesso'
           );
           console.log('[NFSE-CANCEL-POLL] SUCESSO - Fatura ' + move.name + ' cancelada');
@@ -948,12 +942,10 @@ async function processarCancelamentosSolicitados(client, db, uid) {
           });
           await postarMensagemChatter(
             client, db, uid, 'account.move', moveId,
-            '<div style="background:#fef2f2;border-left:4px solid #dc2626;padding:12px;margin:8px 0;border-radius:4px">' +
-            '<b style="color:#b91c1c">✗ Falha no Cancelamento da NFS-e</b><br/>' +
-            'A nota continua <b>autorizada</b>.<br/>' +
-            '<b>Erro:</b> ' + motivo.substring(0, 500) + '<br/>' +
-            '<b>Ambiente:</b> ' + (config.nfse.tp_amb === 1 ? 'PRODUÇÃO' : 'HOMOLOGAÇÃO') +
-            '</div>',
+            '✗ Falha no Cancelamento da NFS-e\n' +
+            'A nota continua AUTORIZADA na SEFIN.\n' +
+            'Erro: ' + motivo.substring(0, 500) + '\n' +
+            'Ambiente: ' + (config.nfse.tp_amb === 1 ? 'PRODUÇÃO' : 'HOMOLOGAÇÃO'),
             'Falha no Cancelamento da NFS-e'
           );
         }
