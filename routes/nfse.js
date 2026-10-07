@@ -158,17 +158,23 @@ router.post('/cancelar', apiKeyAuth, async (req, res) => {
           if (users.length > 0 && users[0].partner_id) authorId = users[0].partner_id[0];
         } catch (e) { /* ignore */ }
 
-        // Cria mail.message com TODOS os campos Odoo 19 (texto puro, sem HTML)
+        // Cria mail.message com TODOS os campos Odoo 19 (texto puro convertido para HTML com <br/>)
         const msgBody = '✓ NFS-e Cancelada\n' +
           'Justificativa: ' + just + '\n' +
           'Resposta SEFIN: ' + (resultado.xMotivo || '') + '\n' +
           'Ambiente: ' + (config.nfse.tp_amb === 1 ? 'PRODUÇÃO' : 'HOMOLOGAÇÃO');
+        // Converte \n para <br/> (Odoo body field é HTML, \n puro é mostrado como texto literal)
+        const bodyHtml = msgBody
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\n/g, '<br/>');
         const msgId = await execKw('mail.message', 'create', [{
           subject: 'NFS-e Cancelada',
           model: 'account.move',
           res_id: move_id,
           record_name: recordName,
-          body: msgBody,
+          body: bodyHtml,
           message_type: 'comment',
           subtype_id: subtypeId || false,
           author_id: authorId || false,

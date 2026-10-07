@@ -183,12 +183,19 @@ async function postarMensagemChatter(client, db, uid, model, resId, body, subjec
   } catch (e) { /* ignore */ }
 
   // Cria mail.message com TODOS os campos Odoo 19 (sem attachment_ids)
+  // Converte \n para <br/> para Odoo chatter renderizar quebras de linha
+  // (Odoo body field é HTML - \n puro é mostrado como texto literal, nao quebra linha)
+  const bodyHtml = String(body || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br/>');
   const msgVals = {
     subject: subject || 'Mensagem',
     model: model,
     res_id: resId,
     record_name: recordName,
-    body: body,
+    body: bodyHtml,
     message_type: 'comment',
     subtype_id: subtypeId || false,
     author_id: authorId || false,
