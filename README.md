@@ -81,11 +81,22 @@ performemais/
 ### Cron (essencial para Vercel)
 
 O Vercel é **serverless**: o `setInterval` não persiste entre invocações frias.
-O `vercel.json` configura um cron que chama `GET /api/cron/process-pending` a cada minuto.
-Esse endpoint dispara o `processPendingEmissions()` do serviço `nfse-odoo-emit`.
 
-Para proteger o endpoint, defina `CRON_SECRET` no Vercel e o Vercel enviará automaticamente
-o header `x-vercel-cron`. Sem `CRON_SECRET`, o endpoint exige `x-vercel-cron`.
+**Importante sobre o Vercel Free (Hobby):** o plano gratuito só permite cron **diário** — não de minuto. Por isso, usamos **GitHub Actions** como cron principal, que chama `GET /api/cron/process-pending` a cada 5 minutos (limite free do GitHub Actions).
+
+Arquivo: `.github/workflows/cron-process-pending.yml`
+
+Para o GitHub Actions funcionar, configure **2 secrets** no repositório GitHub:
+- `VERCEL_URL`: URL do deploy (ex: `https://performemais.vercel.app`)
+- `CRON_SECRET`: mesmo valor configurado no Vercel
+
+Caminho: GitHub repo → Settings → Secrets and variables → Actions → New repository secret.
+
+O endpoint `/api/cron/process-pending` aceita requisições com o header `x-cron-secret: <valor>` (mesma validação que o Vercel Cron faria).
+
+**Alternativas para cron de 1 minuto (se 5 min não for suficiente):**
+- Upgrade Vercel Pro ($20/mês) — restaurar `crons` no `vercel.json` com `"*/1 * * * *"`
+- Usar [cron-job.org](https://cron-job.org) (free, 1 min) apontando para o mesmo endpoint
 
 ## Setup do Odoo (Passo Único)
 
