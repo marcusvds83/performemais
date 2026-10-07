@@ -55,6 +55,11 @@ app.get('/health', (req, res) => {
     cidade: config.nfse.cidade,
     uf: config.nfse.uf,
     tp_amb: config.nfse.tp_amb,
+    serie: config.nfse.serie,
+    c_trib_nac: config.nfse.c_trib_nac_padrao,
+    c_nbs: config.nfse.c_nbs_padrao,
+    aliquota_iss: config.nfse.aliquota_iss,
+    incluir_im: process.env.NFSE_INCLUIR_IM === '1',
     odoo: config.odoo.enabled,
     firebase_configurado: !!(config.firebase.project_id && config.firebase.client_email),
     public_url: config.public_url || '(local)',
@@ -129,6 +134,11 @@ if (!isServerless) {
     console.log('Porta: ' + config.port);
     console.log('Cidade: ' + config.nfse.cidade + '/' + config.nfse.uf);
     console.log('Tp Amb: ' + config.nfse.tp_amb + ' (' + (config.nfse.tp_amb === 1 ? 'PRODUCAO' : 'HOMOLOGACAO') + ')');
+    console.log('Serie: ' + config.nfse.serie + ' (NFSE_SERIE="' + (process.env.NFSE_SERIE || '(vazio)') + '")');
+    console.log('C Trib Nac: ' + config.nfse.c_trib_nac_padrao);
+    console.log('C NBS: ' + config.nfse.c_nbs_padrao);
+    console.log('Aliquota ISS: ' + config.nfse.aliquota_iss + '%');
+    console.log('Incluir IM: ' + (process.env.NFSE_INCLUIR_IM === '1' ? 'SIM' : 'NAO'));
     console.log('API SEFIN: ' + (config.nfse.tp_amb === 1 ? config.sefin.producao : config.sefin.homologacao));
     console.log('Firebase: ' + (config.firebase.project_id || 'NAO configurado'));
     console.log('Odoo: ' + (config.odoo.enabled ? config.odoo.url : 'desabilitado'));

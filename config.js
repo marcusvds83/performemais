@@ -53,9 +53,12 @@ module.exports = {
     // Faixa 1-49999 = serie propria municipal; 50000+ = serie nacional
     // PJAM (Performe+) usa serie 11111 (municipal em Curitiba - confirmado pela ultima NF emitida)
     serie: (() => {
-      const s = process.env.NFSE_SERIE || '11111';
-      const n = parseInt(s, 10);
-      return (n > 0) ? s : '11111';
+      const raw = process.env.NFSE_SERIE;
+      // Se NFSE_SERIE nao definida OU vazia OU "0", usa default 11111
+      if (!raw || raw === '0' || raw === '00000' || parseInt(raw, 10) <= 0) {
+        return '11111';
+      }
+      return String(raw).trim();
     })(),
     versao: process.env.NFSE_VERSAO || '1.01',
     ver_aplic: process.env.NFSE_VER_APLIC || 'performemais_1.0.0',
