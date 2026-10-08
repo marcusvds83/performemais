@@ -242,20 +242,32 @@ async function gerarXmlDPS(dados) {
   const cNBS = firstProduct.x_performe_c_nbs || c.c_nbs_padrao;
 
   // Descricao do servico (xDescServ) — obrigatória, NAO pode ser vazia
-  // Deve conter: nome do produto/servico + quantidade + valor unitario
-  // Formato: "GPA - Pessoas PRO (Qtd: 1 x R$ 5000.00 = R$ 5000.00) - Termos e condicoes: ..."
+  // Deve conter: nome do produto/servico + descricao + quantidade + valor unitario
+  // Formato: "4SX CWB - Datilografia, digitação, estenografia e congêneres. (Qtd: 1 x R$ 799.00 = R$ 799.00)"
   let xDescServ = firstProduct.x_performe_descricao_nfse || '';
+
+  // Sempre adiciona qtd + valor unitario + total ao final da descricao
+  const primeiraLinha = lines[0] || {};
+  const qtd = primeiraLinha.quantity || 0;
+  const valorUnit = primeiraLinha.price_unit || 0;
+  const valorTotal = primeiraLinha.price_subtotal || 0;
+  if (qtd && valorUnit) {
+    const qtdValorStr = ' (Qtd: ' + qtd + ' x R$ ' + Number(valorUnit).toFixed(2) + ' = R$ ' + Number(valorTotal).toFixed(2) + ')';
+    // Adiciona so se ainda nao tem
+    if (xDescServ && !xDescServ.includes('Qtd:')) {
+      xDescServ = xDescServ + qtdValorStr;
+    }
+  }
+
   if (!xDescServ) {
-    // Monta descricao completa a partir das linhas da fatura
+    // Monta descricao completa a partir das linhas da fatura (fallback)
     const partes = lines.map(l => {
       const nome = l.name || '';
       const qtd = l.quantity || 0;
       const valorUnit = l.price_unit || 0;
       const valorTotal = l.price_subtotal || 0;
-      // Busca nome do produto se tiver product_id
       const prod = l.product_id && l.product_id[0] ? (products[l.product_id[0]] || {}) : {};
       const nomeProduto = prod.name || '';
-      // Formato: "Nome do Produto (Qtd: X x R$ Y,YY = R$ Z,ZZ)"
       const nomeFinal = nomeProduto || nome;
       if (nomeFinal && qtd && valorUnit) {
         return nomeFinal + ' (Qtd: ' + qtd + ' x R$ ' + Number(valorUnit).toFixed(2) + ' = R$ ' + Number(valorTotal).toFixed(2) + ')';

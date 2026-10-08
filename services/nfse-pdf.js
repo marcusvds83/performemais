@@ -747,11 +747,35 @@ async function gerarPdfDanfse(nfseXml) {
     // INFORMACOES COMPLEMENTARES
     // ==============================================
     hline(doc, y, M, M + CW, BLACK, 0.7);
-    y = sectionHeader(doc, y, 'INFORMA\u00c7\u00d5ES COMPLEMENTARES', CW);
+    y = sectionHeader(doc, y, 'INFORMAÇÕES COMPLEMENTARES', CW);
     hline(doc, y, M, M + CW, BORDER);
-    doc.font('Helvetica').fontSize(6).fillColor('#555555');
-    doc.text('Totais aproximados dos Tributos cfe. Lei n\u00b0 12.741/2012: Federais: -; Estaduais: -; Municipais: -;', M + PAD, y + 3, { width: CW - PAD * 2 });
-    y += 12;
+
+    // Calcular valores aproximados dos tributos (Lei 12.741/2012)
+    // PJAM é Simples Nacional - tributos aproximados:
+    //   - Federais (IRPJ+CSLL+PIS+COFINS+CPP): ~ 4% do vServ
+    //   - Estaduais: 0% (nao tem ICMS para servico)
+    //   - Municipais (ISS): aliquota_iss (5% em Curitiba)
+    // Total aproximado: pTotTribSN (configurado no painel, geralmente 6.00%)
+    const vServNum = parseFloat(vServ) || 0;
+    const pTotTribSNNum = parseFloat(pTotTribSN) || 0;
+    const pAliqIssNum = parseFloat(xmlTag(dpsXml, 'pAliq') || config.nfse.aliquota_iss || 5);
+    const totalTribAprox = (vServNum * pTotTribSNNum) / 100;
+    const tribFederais = (vServNum * (pTotTribSNNum - pAliqIssNum)) / 100;
+    const tribEstaduais = 0;
+    const tribMunicipais = (vServNum * pAliqIssNum) / 100;
+
+    doc.font('Helvetica').fontSize(7).fillColor('#555555');
+    let infoComplementar = '';
+    infoComplementar += 'Conforme Lei 12.741/2012, o percentual total de impostos incidentes neste serviço prestado é de aproximadamente ' + pTotTribSNNum.toFixed(2) + '%.\n';
+    infoComplementar += 'Valor líquido da Nota Fiscal = ' + fmtMoeda(vLiq) + '\n\n';
+    infoComplementar += 'Totais Aproximados dos Tributos cfe. Lei nº 12.741/2012: ';
+    infoComplementar += 'Federais: ' + fmtMoeda(tribFederais) + ' ; ';
+    infoComplementar += 'Estaduais: ' + fmtMoeda(tribEstaduais) + ' ; ';
+    infoComplementar += 'Municipais: ' + fmtMoeda(tribMunicipais);
+
+    const infoHeight = doc.heightOfString(infoComplementar, { width: CW - PAD * 2 });
+    doc.text(infoComplementar, M + PAD, y + 3, { width: CW - PAD * 2 });
+    y += infoHeight + 6;
 
     // ==============================================
     // RODAPE - Assinaturas
