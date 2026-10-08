@@ -157,6 +157,9 @@ async function postarMensagemComAnexo(client, db, uid, model, resId, body, attac
  * @returns {number} ID da mail.message criada
  */
 async function postarMensagemChatter(client, db, uid, model, resId, body, subject) {
+  console.log('[NFSE-CHAT] INICIO postarMensagemChatter | model=' + model + ' resId=' + resId + ' subject=' + (subject || '(sem)'));
+  console.log('[NFSE-CHAT] body (primeiros 200 chars): ' + String(body || '').substring(0, 200));
+
   // Busca subtype_id mt_note (mensagem interna - aparece no chatter)
   let subtypeId = false;
   try {
@@ -164,8 +167,9 @@ async function postarMensagemChatter(client, db, uid, model, resId, body, subjec
       [['name', '=', 'mt_note'], ['module', '=', 'mail']], ['res_id'],
     ]);
     if (subtypes.length > 0) subtypeId = subtypes[0].res_id;
+    console.log('[NFSE-CHAT] subtype_id mt_note buscado: ' + subtypeId);
   } catch (e) {
-    console.warn('[NFSE-CHAT] Nao foi possivel buscar mt_note subtype:', e.message);
+    console.warn('[NFSE-CHAT] WARN Nao buscou mt_note subtype: ' + e.message);
   }
 
   // Busca res_id do registro pra setar record_name (Odoo 19 usa pra mostrar no chatter)
@@ -174,17 +178,21 @@ async function postarMensagemChatter(client, db, uid, model, resId, body, subjec
   try {
     const records = await executeKw(client, db, uid, model, 'read', [[resId], ['name']]);
     if (records.length > 0 && records[0].name) recordName = records[0].name;
-  } catch (e) { /* ignore */ }
+    console.log('[NFSE-CHAT] record_name: ' + recordName);
+  } catch (e) {
+    console.warn('[NFSE-CHAT] WARN Nao buscou record_name: ' + e.message);
+  }
 
   // Busca partner_id do usuario atual (pra author_id)
   try {
     const users = await executeKw(client, db, uid, 'res.users', 'read', [[uid], ['partner_id']]);
     if (users.length > 0 && users[0].partner_id) authorId = users[0].partner_id[0];
-  } catch (e) { /* ignore */ }
+    console.log('[NFSE-CHAT] author_id: ' + authorId);
+  } catch (e) {
+    console.warn('[NFSE-CHAT] WARN Nao buscou author_id: ' + e.message);
+  }
 
-  // Cria mail.message com TODOS os campos Odoo 19 (sem attachment_ids)
-  // Converte \n para <br/> para Odoo chatter renderizar quebras de linha
-  // (Odoo body field é HTML - \n puro é mostrado como texto literal, nao quebra linha)
+  // Converte \n para <br/> (Odoo body field é HTML, \n puro é mostrado como texto literal)
   const bodyHtml = String(body || '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -203,10 +211,17 @@ async function postarMensagemChatter(client, db, uid, model, resId, body, subjec
     date: new Date().toISOString().replace('T', ' ').substring(0, 19),
     is_internal: true,
   };
+  console.log('[NFSE-CHAT] Vai criar mail.message com vals: subject=' + msgVals.subject + ' | model=' + msgVals.model + ' | res_id=' + msgVals.res_id);
 
-  const msgId = await executeKw(client, db, uid, 'mail.message', 'create', [msgVals]);
-  console.log('[NFSE-CHAT] Mensagem postada no chatter (id=' + msgId + '): ' + (subject || '(sem assunto)'));
-  return msgId;
+  try {
+    const msgId = await executeKw(client, db, uid, 'mail.message', 'create', [msgVals]);
+    console.log('[NFSE-CHAT] OK Mensagem criada (id=' + msgId + '): ' + (subject || '(sem assunto)'));
+    return msgId;
+  } catch (e) {
+    console.error('[NFSE-CHAT] ERRO ao criar mail.message: ' + e.message);
+    console.error('[NFSE-CHAT] Stack: ' + (e.stack || '').substring(0, 500));
+    throw e;
+  }
 }
 
 /**
