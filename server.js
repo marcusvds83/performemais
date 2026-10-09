@@ -36,6 +36,7 @@ const nfseRoutes = require('./routes/nfse');
 const dashboardRoutes = require('./routes/dashboard');
 const adminToolsRoutes = require('./routes/admin-tools');
 const cronRoutes = require('./routes/cron');
+const botRoutes = require('./routes/bot');
 const { processPendingEmissions } = require('./services/nfse-odoo-emit');
 
 const app = express();
@@ -75,6 +76,7 @@ app.use('/api/v1/nfse', nfseRoutes);
 app.use('/api/v1/nfse', dashboardRoutes);
 app.use('/api/v1/nfse', adminToolsRoutes);
 app.use('/api/cron', cronRoutes);
+app.use('/bot', botRoutes);  // Bot WhatsApp IA Performe+
 
 // === Polling de emissões pendentes ===
 // - Render (long-running): setInterval persiste enquanto o processo estiver vivo.
@@ -107,8 +109,8 @@ function startPolling() {
   }, interval);
 }
 
-// === 404 (apenas para API) ===
-app.use('/api', (req, res) => {
+// === 404 (apenas para API e bot) ===
+app.use(['/api', '/bot'], (req, res) => {
   res.status(404).json({ erro: 'Rota nao encontrada' });
 });
 
