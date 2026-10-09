@@ -1,16 +1,18 @@
 /**
- * Nytro Bot — Widget de Chat para Site
- * Design inspirado no WhatsApp com a logo da Nytro
+ * Performe+ Bot — Widget de Chat para Site
+ * Design inspirado no WhatsApp com a logo da Performe+
  */
 
 (function() {
   'use strict';
-  if (window.__NYTRO_CHAT_LOADED__) return;
-  window.__NYTRO_CHAT_LOADED__ = true;
+  if (window.__PERFORME_CHAT_LOADED__) return;
+  window.__PERFORME_CHAT_LOADED__ = true;
   // Cache buster
   var _ts = Date.now();
 
-  const VERCEL_URL = 'https://vercel-nytro-git-main-nytro3.vercel.app';
+  // A URL do bot é configurada quando o serviço for deployado no Render.
+  // Substitua pelo endereço final: https://performemais-bot.onrender.com
+  const VERCEL_URL = (window.__PERFORME_BOT_URL__ || 'https://performemais-bot.onrender.com');
   const API_ENDPOINT = VERCEL_URL + '/api/chat';
   const LOGO_URL = VERCEL_URL + '/api/logo';
   const PRIMARY_COLOR = '#0F766E';
@@ -22,7 +24,7 @@
   const SESSION_ID = 'web-' + Math.random().toString(36).slice(2, 12);
 
   let isOpen = false;
-  let messages = [{ role: 'assistant', content: 'Olá! Sou o assistente virtual da Nytro. Como posso te ajudar hoje?' }];
+  let messages = [{ role: 'assistant', content: 'Olá! Sou o assistente virtual da Performe+. Como posso te ajudar hoje?' }];
   let isLoading = false;
 
   const style = document.createElement('style');
@@ -318,9 +320,9 @@
   win.id = 'nytro-window';
   win.innerHTML = `
     <div class="nytro-header">
-      <img src="${LOGO_URL}" alt="Nytro" style="width:42px;height:42px;flex-shrink:0;" />
+      <img src="${LOGO_URL}" alt="Performe+" style="width:42px;height:42px;flex-shrink:0;" />
       <div class="nytro-header-info">
-        <div class="nytro-header-name">Assistente Nytro</div>
+        <div class="nytro-header-name">Assistente Performe+</div>
         <div class="nytro-header-status">Online agora</div>
       </div>
       <button class="nytro-close" id="nytro-close-btn">
@@ -329,9 +331,9 @@
     </div>
     <div class="nytro-body" id="nytro-body"></div>
     <div class="nytro-suggestions" id="nytro-suggestions">
-      <button class="nytro-suggestion-btn" data-text="Quero saber sobre o Nytro Fiscal Cloud">Emissão NF-e / NFs-e</button>
-      <button class="nytro-suggestion-btn" data-text="Quais soluções a Nytro oferece?">Soluções Nytro</button>
-      <button class="nytro-suggestion-btn" data-text="Como funciona o ERP Odoo?">ERP Odoo</button>
+      <button class="nytro-suggestion-btn" data-text="Quero saber sobre o curso 4SX">Curso 4SX</button>
+      <button class="nytro-suggestion-btn" data-text="Quais são os cursos da Performe+?">Cursos Performe+</button>
+      <button class="nytro-suggestion-btn" data-text="Quero falar com um especialista">Falar com especialista</button>
     </div>
     <div class="nytro-input-bar">
       <div class="nytro-input-wrap">
@@ -420,7 +422,7 @@
     .then(function(data) {
       messages.push({ role: 'assistant', content: data.reply });
       if (data.leadCreated) {
-        messages.push({ role: 'assistant', content: '✅ Seu contato foi registrado! Um especialista da Nytro entrará em contato em até 1 dia útil.' });
+        messages.push({ role: 'assistant', content: '✅ Seu contato foi registrado! Um especialista da Performe+ entrará em contato em até 1 dia útil.' });
       }
     })
     .catch(function() {

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Nytro Bot — Vercel",
-  description: "Bot IA da Nytro para WhatsApp. Deploy Vercel + Odoo SaaS.",
+  title: "Performe+ Bot — WhatsApp AI",
+  description: "Bot IA da Performe+ para WhatsApp. Deploy Render + Odoo SaaS.",
   robots: "noindex",
 };
 

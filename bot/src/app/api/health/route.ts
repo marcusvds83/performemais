@@ -26,7 +26,7 @@ export async function GET() {
       odooConfigured: !!process.env.ODOO_URL,
       odooDb: process.env.ODOO_DB ? "(set)" : "(missing)",
       whatsappToken: process.env.WHATSAPP_VERIFY_TOKEN ? "(set)" : "(missing)",
-      operatorIds: process.env.NYTRO_OPERATOR_USER_IDS || "2,6 (default)",
+      operatorIds: process.env.PERFORME_OPERATOR_USER_IDS || "2,6 (default)",
       missing: missing.length === 0 ? null : missing,
     },
     endpoints: {

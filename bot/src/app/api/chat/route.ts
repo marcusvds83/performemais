@@ -3,7 +3,7 @@
  * Body: { sessionId, message }
  *
  * Chat endpoint for the website widget.
- * Uses Gemini AI with Nytro knowledge base.
+ * Uses Gemini AI with Performe+ knowledge base.
  * Creates Lead in Odoo CRM when detects contact info.
  */
 

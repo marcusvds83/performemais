@@ -1,10 +1,13 @@
-# render.yaml — Configuracao do Render para o middleware Performe+ NFS-e
-# Render free: Web Service Node.js long-running com setInterval de 30s.
-# Para evitar spin-down (dormir apos 15min sem incoming HTTP), use um pinger
-# externo (cron-job.org) batendo em /health a cada 5 minutos.
+# render.yaml — Configuração do Render para Performe+
+# 2 serviços independentes:
+#   1. performemais-nfse  — Middleware NFS-e/NF-e (Node.js Express, pasta raiz)
+#   2. performemais-bot  — Bot WhatsApp IA (Next.js, pasta bot/)
+# Os dois serviços rodam no mesmo Render mas são INDEPENDENTES —
+# um não depende do outro. Se um cair, o outro continua funcionando.
 # Docs: https://render.com/docs/blueprint-spec
 
 services:
+  # === Serviço 1: NF-e Middleware (já existente, intacto) ===
   - type: web
     name: performemais-nfse
     env: node
@@ -12,6 +15,7 @@ services:
     region: oregon  # ou sao-paulo se disponivel
     branch: main
     repo: https://github.com/marcusvds83/performemais
+    rootDir: /
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /health
@@ -34,9 +38,7 @@ services:
       - key: ODOO_API_KEY
         sync: false
       - key: ODOO_POLLING_MS
-        value: "30000"  # 30 segundos
-      # ODOO_CRON_MODE nao precisa definir: deteccao automatica no config.js
-      # (Render = long-running -> setInterval ativo por default)
+        value: "30000"
       - key: NFSE_UF
         value: PR
       - key: NFSE_CIDADE
@@ -44,15 +46,15 @@ services:
       - key: NFSE_CODIGO_IBGE
         value: "4106902"
       - key: NFSE_TP_AMB
-        value: "2"  # 1=producao, 2=homologacao
+        value: "2"
       - key: NFSE_SERIE
-        value: "11111"  # serie municipal PJAM em Curitiba (confirmado pela ultima NF)
+        value: "11111"
       - key: NFSE_ALIQUOTA_ISS
         value: "5.00"
       - key: NFSE_C_NBS
-        value: "118065900"  # codigo municipal PJAM em Curitiba
+        value: "118065900"
       - key: NFSE_C_TRIB_NAC
-        value: "170201"  # LC 116 - Datilografia/digitacao
+        value: "170201"
       - key: NFSE_OP_SIMP_NAC
         value: "3"
       - key: NFSE_P_TOT_TRIB_SN
@@ -60,7 +62,7 @@ services:
       - key: NFSE_VER_APLIC
         value: performemais_1.0.0
       - key: NFSE_INCLUIR_IM
-        value: "0"  # NAO enviar IM (E0120 da SEFIN)
+        value: "0"
       - key: FIREBASE_PROJECT_ID
         sync: false
       - key: FIREBASE_CLIENT_EMAIL
@@ -75,3 +77,52 @@ services:
         value: https://sefin.nfse.gov.br/SefinNacional
       - key: SEFIN_HOM_URL
         value: https://sefin.producaorestrita.nfse.gov.br/SefinNacional
+
+  # === Serviço 2: Bot WhatsApp IA (NOVO, independente do NF-e) ===
+  - type: web
+    name: performemais-bot
+    env: node
+    plan: free
+    region: oregon
+    branch: main
+    repo: https://github.com/marcusvds83/performemais
+    rootDir: bot
+    buildCommand: npm install && npm run build
+    startCommand: npm start -- -H 0.0.0.0 -p ${PORT:-3000}
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # === Gemini AI ===
+      - key: GEMINI_API_KEY
+        sync: false  # preencher com sua chave do Google AI Studio
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash  # fallback: gemini-2.0-flash, gemini-1.5-flash
+      # === Odoo Performe+ ===
+      - key: ODOO_URL
+        value: https://performe.odoo.com
+      - key: ODOO_DB
+        value: performe
+      - key: ODOO_USERNAME
+        sync: false  # paulo.yure@gmail.com
+      - key: ODOO_API_KEY
+        sync: false  # nova API key: 6b3570b378eae7dab265122c1a842edce9feb42e
+      # === WhatsApp Meta Cloud API ===
+      - key: WHATSAPP_VERIFY_TOKEN
+        sync: false  # escolher um token, ex: performe-bot-verify-2024
+      # === Bot behavior ===
+      - key: PERFORME_OPERATOR_USER_IDS
+        value: "2,6"  # IDs dos usuários operadores no Odoo
+      - key: PERFORME_HANDOFF_WORDS
+        value: "humano,atendente,operador,falar com pessoa"
+      - key: PERFORME_DEFAULT_SALESPERSON_ID
+        value: "2"  # ID do vendedor default para oportunidades criadas
+      - key: PERFORME_DEFAULT_TEAM_ID
+        value: "1"  # ID do time de vendas default
+      # === Cron (inatividade → oportunidade) ===
+      - key: CRON_SECRET
+        sync: false  # token de auth para o cron endpoint
+      # === Forward webhook (opcional, para Odoo) ===
+      - key: ODOO_WEBHOOK_FORWARD_URL
+        sync: false  # https://www.performe.com.br/whatsapp/webhook

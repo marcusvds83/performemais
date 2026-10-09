@@ -8,6 +8,9 @@
 # production
 /build
 
+# local sdk config (don't commit z-ai sandbox credentials)
+/.z-ai-config
+
 # misc
 .DS_Store
 *.pem

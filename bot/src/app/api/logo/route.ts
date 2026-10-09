@@ -3,21 +3,20 @@ import { head } from "@vercel/blob";
 
 export const runtime = "nodejs";
 
-// Fallback: logo original hospedada no Odoo
+// Fallback: logo original hospedada no Odoo Performe+
 const FALLBACK_LOGO_URL =
-  "https://luisfernandonytro-nytro.odoo.com/web/image/5759-5e1feadc/newlogo.png?height=256";
+  "https://performe.odoo.com/web/image/website/1/logo?height=256";
 
 // Paths possíveis — um por extensão de arquivo
 const BLOB_PATHS = [
-  "nytro-logo/logo-current.png",
-  "nytro-logo/logo-current.jpg",
-  "nytro-logo/logo-current.jpeg",
-  "nytro-logo/logo-current.webp",
-  "nytro-logo/logo-current.svg",
+  "performe-logo/logo-current.png",
+  "performe-logo/logo-current.jpg",
+  "performe-logo/logo-current.jpeg",
+  "performe-logo/logo-current.webp",
+  "performe-logo/logo-current.svg",
 ];
 
 async function findLogoBlob(): Promise<string | null> {
-  // Tenta cada extensão até achar
   for (const path of BLOB_PATHS) {
     try {
       const blob = await head(path);
@@ -30,7 +29,6 @@ async function findLogoBlob(): Promise<string | null> {
 }
 
 export async function GET() {
-  // Cache de 60s no client e 60s na CDN para não buscar o Blob toda vez
   const headers: Record<string, string> = {
     "Cache-Control": "public, max-age=60, s-maxage=60",
     "Access-Control-Allow-Origin": "*",
@@ -39,14 +37,12 @@ export async function GET() {
   try {
     const blobUrl = await findLogoBlob();
     if (blobUrl) {
-      // Redireciona para o Blob — Vercel Blob é CDN rápido
       return NextResponse.redirect(blobUrl, { status: 302, headers });
     }
   } catch (err) {
     console.warn("[logo] erro ao buscar blob:", err);
   }
 
-  // Fallback: Odoo
   return NextResponse.redirect(FALLBACK_LOGO_URL, { status: 302, headers });
 }
 

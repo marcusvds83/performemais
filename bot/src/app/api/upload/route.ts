@@ -3,7 +3,7 @@ import { put, head, del } from "@vercel/blob";
 
 export const runtime = "nodejs";
 
-const BLOB_PATH = "nytro-logo/logo-current";
+const BLOB_PATH = "performe-logo/logo-current";
 
 export async function POST(req: NextRequest) {
   try {
