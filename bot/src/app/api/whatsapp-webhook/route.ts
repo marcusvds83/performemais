@@ -93,14 +93,16 @@ export async function POST(req: NextRequest) {
   console.log(`[Performe+-Webhook] Payload preview: ${rawBody.slice(0, 500)}`);
 
   // FORWARD the webhook to Odoo (fire-and-forget, non-blocking)
+  // Isso garante que o Odoo crie o discuss.channel e salve a mensagem inbound no chatter
+  // O bot responde via JSON-RPC depois (em paralelo)
   try {
-    const odooWebhookUrl = "https://www.performe.com.br/whatsapp/webhook";
-    console.log(`[Performe+-Webhook] Forwarding to Odoo (fire-and-forget)`);
+    const odooWebhookUrl = process.env.ODOO_WEBHOOK_FORWARD_URL || "https://www.performemais.com/whatsapp/webhook";
+    console.log(`[Performe+-Webhook] Forwarding to Odoo: ${odooWebhookUrl}`);
     fetch(odooWebhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: rawBody,
-    }).catch(() => {});
+    }).catch((e) => console.log(`[Performe+-Webhook] Forward to Odoo failed (non-blocking): ${e}`));
   } catch (e) {
     // ignore
   }
