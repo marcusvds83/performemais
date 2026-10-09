@@ -9,12 +9,18 @@
  *   GET  /bot/whatsapp-webhook                 — Verificacao do Meta (nao usado neste fluxo)
  *   POST /bot/whatsapp-webhook                 — Recebe webhook do Meta (nao usado neste fluxo)
  *   POST /bot/cron-check-inactivity            — Cron para criar oportunidades
+ *   POST /bot/redrive-search                   — Busca contato Redrive por phone/email
+ *   POST /bot/redrive-update-odoo              — Busca Redrive + atualiza partner/lead no Odoo
+ *   POST /bot/redrive-upload-history           — Upload PDF/txt de conversa -> posta como attachment no chatter Odoo
  */
 
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB
 const { getUid, searchRead, executeKw, sendWhatsAppReply, createCrmLead, findLeadByPhone, updateLeadDescription, convertLeadToOpportunity, stripHtml } = require('../services/bot-odoo');
 const { replyWhatsApp } = require('../services/bot-ai');
+const redrive = require('../services/redrive');
 
 // === Helpers ===
 function getOdooEnv() {
@@ -431,6 +437,194 @@ router.get('/cron-check-inactivity', (req, res) => {
     endpoint: 'POST /bot/cron-check-inactivity',
     description: 'Cron para criar oportunidades de conversas abandonadas',
     auth: 'Bearer CRON_SECRET',
+  });
+});
+
+// ============================================================
+// === REDRIVE INTEGRATION ====================================
+// ============================================================
+
+// === POST /bot/redrive-search ===
+// Busca contato Redrive por phone/email/firstname/etc.
+// Body: { phone: "5599999999999" } OU { email: "..." } OU { firstname: "..." }
+router.post('/redrive-search', async (req, res) => {
+  try {
+    const query = req.body || {};
+    console.log(`[Bot-Redrive] search: ${JSON.stringify(query)}`);
+    const results = await redrive.searchContact(query);
+    return res.json({ ok: true, count: results.length, results });
+  } catch (err) {
+    console.error('[Bot-Redrive] search error:', err);
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// === POST /bot/redrive-update-odoo ===
+// Busca contato Redrive + atualiza partner/lead no Odoo
+// Body: { phone: "5599999999999", model: "res.partner" | "crm.lead", record_id: 123 }
+router.post('/redrive-update-odoo', async (req, res) => {
+  try {
+    const { phone, email, model = 'res.partner', record_id } = req.body || {};
+    console.log(`[Bot-Redrive] update-odoo: phone=${phone} email=${email} model=${model} record_id=${record_id}`);
+
+    if (!record_id) {
+      return res.status(400).json({ ok: false, error: 'record_id obrigatorio' });
+    }
+
+    // Busca contato Redrive
+    let rc = null;
+    if (phone) rc = await redrive.searchContactByPhone(phone);
+    if (!rc && email) rc = await redrive.searchContactByEmail(email);
+    if (!rc) {
+      return res.json({ ok: false, error: 'contato nao encontrado na Redrive' });
+    }
+    console.log(`[Bot-Redrive] contato encontrado: ${rc.firstname} ${rc.lastname} - campo_auxiliar="${rc.campo_auxiliar || ''}"`);
+
+    // Atualiza no Odoo
+    const env = getOdooEnv();
+    let updateResult;
+    if (model === 'crm.lead') {
+      updateResult = await redrive.updateOdooLeadFromRedrive(env, record_id, rc);
+    } else {
+      updateResult = await redrive.updateOdooPartnerFromRedrive(env, record_id, rc);
+    }
+
+    // Posta no chatter
+    await redrive.postRedriveContactToChatter(env, model, record_id, rc);
+
+    return res.json({
+      ok: updateResult.ok,
+      redrive_contact: {
+        firstname: rc.firstname,
+        lastname: rc.lastname,
+        email: rc.email,
+        phone: rc.phone,
+        campo_auxiliar: rc.campo_auxiliar,
+        curso_mapeado: redrive.mapCampoAuxiliarToCurso(rc.campo_auxiliar),
+      },
+      updated_fields: updateResult.vals || {},
+      error: updateResult.error,
+    });
+  } catch (err) {
+    console.error('[Bot-Redrive] update-odoo error:', err);
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// === POST /bot/redrive-upload-history ===
+// Upload de arquivo de historico (PDF/txt/HTML) exportado manualmente da Redrive
+// Posta como attachment no chatter do partner/lead no Odoo
+// Form: multipart/form-data com fields: file, model (res.partner|crm.lead), record_id
+router.post('/redrive-upload-history', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ ok: false, error: 'arquivo nao enviado (campo "file")' });
+    }
+    const model = req.body.model || 'res.partner';
+    const record_id = parseInt(req.body.record_id, 10);
+    if (!record_id) {
+      return res.status(400).json({ ok: false, error: 'record_id obrigatorio' });
+    }
+    const filename = req.file.originalname || `historico-${Date.now()}.txt`;
+    const mimetype = req.file.mimetype || 'application/octet-stream';
+    const fileBuffer = req.file.buffer;
+    console.log(`[Bot-Redrive] upload-history: file="${filename}" size=${fileBuffer.length} model=${model} record_id=${record_id}`);
+
+    const env = getOdooEnv();
+
+    // 1. Cria ir.attachment vinculado ao record
+    // Odoo 19.4: usa campo 'raw' (nao 'datas') para conteudo binario
+    const attachmentVals = {
+      name: filename,
+      raw: fileBuffer.toString('base64'),
+      mimetype: mimetype,
+      res_model: model,
+      res_id: record_id,
+    };
+    let attachmentId;
+    try {
+      attachmentId = await executeKw(env, 'ir.attachment', 'create', [attachmentVals]);
+      console.log(`[Bot-Redrive] attachment criado: ${attachmentId}`);
+    } catch (e) {
+      return res.status(500).json({ ok: false, error: `Falha ao criar attachment: ${e}` });
+    }
+
+    // 2. Posta mensagem no chatter referenciando o attachment
+    const today = new Date().toISOString().slice(0, 10);
+    const body = `<b>Histórico de Conversa WhatsApp (Redrive)</b><br/>`
+      + `<b>Arquivo:</b> ${filename}<br/>`
+      + `<b>Data upload:</b> ${today}<br/>`
+      + `<br/>Veja o arquivo anexo para o histórico completo da conversa.`;
+    try {
+      // message_post com attachment_ids
+      const uid = await getUid(env);
+      const result = await fetch(`${env.url}/jsonrpc`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0', method: 'call', id: Date.now(),
+          params: {
+            service: 'object', method: 'execute',
+            args: [env.db, uid, env.apiKey, model, 'message_post',
+              [record_id], {
+                body,
+                message_type: 'comment',
+                subtype_xmlid: 'mail.mt_comment',
+                attachment_ids: [Array.isArray(attachmentId) ? attachmentId[0] : attachmentId],
+              }],
+          },
+        }),
+      }).then(r => r.json());
+      if (result.error) {
+        console.log(`[Bot-Redrive] message_post com attachment falhou, tentando sem attachment_ids: ${result.error}`);
+        // Fallback sem attachment_ids
+        await executeKw(env, model, 'message_post', [[record_id], {
+          body, message_type: 'comment', subtype_xmlid: 'mail.mt_comment',
+        }]);
+      }
+    } catch (e) {
+      console.log(`[Bot-Redrive] message_post falhou: ${e}`);
+      // Fallback: post simples
+      try {
+        await executeKw(env, model, 'message_post', [[record_id], {
+          body: body + `<br/><i>(attachment ${attachmentId} - ver em anexos)</i>`,
+          message_type: 'comment', subtype_xmlid: 'mail.mt_comment',
+        }]);
+      } catch (e2) {}
+    }
+
+    return res.json({
+      ok: true,
+      attachment_id: attachmentId,
+      filename,
+      size: fileBuffer.length,
+      model,
+      record_id,
+    });
+  } catch (err) {
+    console.error('[Bot-Redrive] upload-history error:', err);
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// === GET /bot/redrive-info — info dos endpoints ===
+router.get('/redrive-info', (req, res) => {
+  res.json({
+    endpoints: {
+      'POST /bot/redrive-search': {
+        description: 'Busca contato Redrive',
+        body: { phone: 'string (opcional)', email: 'string (opcional)', firstname: 'string (opcional)' },
+      },
+      'POST /bot/redrive-update-odoo': {
+        description: 'Busca Redrive + atualiza partner/lead no Odoo',
+        body: { phone: 'string OU email: string', model: 'res.partner | crm.lead', record_id: 'number' },
+      },
+      'POST /bot/redrive-upload-history': {
+        description: 'Upload de PDF/txt exportado da Redrive -> attachment no chatter Odoo',
+        form_data: { file: 'arquivo', model: 'res.partner | crm.lead', record_id: 'number' },
+      },
+    },
+    config_required: ['REDRIVE_LOGIN', 'REDRIVE_PASSWORD', 'ODOO_URL', 'ODOO_DB', 'ODOO_USERNAME', 'ODOO_API_KEY'],
   });
 });
 
