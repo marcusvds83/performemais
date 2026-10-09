@@ -70,14 +70,38 @@ async function searchRead(env, model, domain, fields, limit = 80, order = 'id de
   return result || [];
 }
 
-async function executeKw(env, model, method, args) {
+async function executeKw(env, model, method, args, kwargs) {
   const uid = await getUid(env);
-  const result = await rpc(env, '/jsonrpc', {
-    service: 'object',
-    method: 'execute',
-    args: [env.db, uid, env.apiKey, model, method, ...args],
+  // IMPORTANTE: Em Odoo 19.4, execute_kw recebe args e kwargs SEPARADOS:
+  //   execute_kw(db, uid, key, model, method, args_list, kwargs_dict)
+  // NAO uma lista unica [args, kwargs] (que era o formato antigo)
+  const body = {
+    jsonrpc: '2.0',
+    method: 'call',
+    params: {
+      service: 'object',
+      method: 'execute_kw',
+      args: kwargs
+        ? [env.db, uid, env.apiKey, model, method, args, kwargs]
+        : [env.db, uid, env.apiKey, model, method, args],
+    },
+    id: Date.now(),
+  };
+  const res = await fetch(`${env.url}/jsonrpc`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'User-Agent': 'Performe+Bot/1.0' },
+    body: JSON.stringify(body),
+    cache: 'no-store',
   });
-  return result;
+  if (!res.ok) {
+    throw new Error(`Odoo HTTP ${res.status}: ${await res.text()}`);
+  }
+  const json = await res.json();
+  if (json.error) {
+    const msg = json.error?.data?.message || json.error?.message || 'Unknown Odoo error';
+    throw new Error(`Odoo: ${msg}`);
+  }
+  return json.result;
 }
 
 async function sendWhatsAppReply(env, opts) {
@@ -255,11 +279,12 @@ async function updateLeadDescription(env, leadId, description) {
 
 async function notifyPartnerChatter(env, partnerId, message) {
   try {
-    await executeKw(env, 'res.partner', 'message_post', [[partnerId], {
+    // message_post aceita só kwargs - usar args=[partnerId], kwargs={body,...}
+    await executeKw(env, 'res.partner', 'message_post', [partnerId], {
       body: message,
       message_type: 'notification',
       subtype_xmlid: 'mail.mt_comment',
-    }]);
+    });
     return true;
   } catch {
     return false;

@@ -131,14 +131,12 @@ router.post('/whatsapp-on-create', async (req, res) => {
     if (wantsHuman) {
       console.log(`[Bot-OnCreate] Handoff solicitado`);
       try {
-        await executeKw(env, 'res.partner', 'message_post', [
-          [authorId],
-          {
-            body: `<p><b>🔔 Handoff solicitado via WhatsApp</b></p><p><b>Cliente:</b> ${authorName || '-'}</p><p><b>Mensagem:</b> ${text.slice(0, 500)}</p><p>Um operador humano precisa assumir esta conversa.</p>`,
-            message_type: 'notification',
-            subtype_xmlid: 'mail.mt_comment',
-          },
-        ]);
+        // message_post aceita só kwargs - usar args=[authorId], kwargs={body,...}
+        await executeKw(env, 'res.partner', 'message_post', [authorId], {
+          body: `<p><b>🔔 Handoff solicitado via WhatsApp</b></p><p><b>Cliente:</b> ${authorName || '-'}</p><p><b>Mensagem:</b> ${text.slice(0, 500)}</p><p>Um operador humano precisa assumir esta conversa.</p>`,
+          message_type: 'notification',
+          subtype_xmlid: 'mail.mt_comment',
+        });
       } catch (e) {
         console.log(`[Bot-OnCreate] Handoff notify failed: ${e}`);
       }
@@ -555,42 +553,30 @@ router.post('/redrive-upload-history', upload.single('file'), async (req, res) =
       + `<b>Arquivo:</b> ${filename}<br/>`
       + `<b>Data upload:</b> ${today}<br/>`
       + `<br/>Veja o arquivo anexo para o histórico completo da conversa.`;
+    const attId = Array.isArray(attachmentId) ? attachmentId[0] : attachmentId;
+    
+    // Em Odoo 19.4, message_post aceita só kwargs
+    // Usar executeKw(env, model, 'message_post', [record_id], kwargs_dict)
     try {
-      // message_post com attachment_ids
-      const uid = await getUid(env);
-      const result = await fetch(`${env.url}/jsonrpc`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0', method: 'call', id: Date.now(),
-          params: {
-            service: 'object', method: 'execute',
-            args: [env.db, uid, env.apiKey, model, 'message_post',
-              [record_id], {
-                body,
-                message_type: 'comment',
-                subtype_xmlid: 'mail.mt_comment',
-                attachment_ids: [Array.isArray(attachmentId) ? attachmentId[0] : attachmentId],
-              }],
-          },
-        }),
-      }).then(r => r.json());
-      if (result.error) {
-        console.log(`[Bot-Redrive] message_post com attachment falhou, tentando sem attachment_ids: ${result.error}`);
-        // Fallback sem attachment_ids
-        await executeKw(env, model, 'message_post', [[record_id], {
-          body, message_type: 'comment', subtype_xmlid: 'mail.mt_comment',
-        }]);
-      }
+      await executeKw(env, model, 'message_post', [record_id], {
+        body,
+        message_type: 'comment',
+        subtype_xmlid: 'mail.mt_comment',
+        attachment_ids: [attId],
+      });
+      console.log(`[Bot-Redrive] message_post com attachment_ids OK`);
     } catch (e) {
-      console.log(`[Bot-Redrive] message_post falhou: ${e}`);
-      // Fallback: post simples
+      console.log(`[Bot-Redrive] message_post com attachment_ids falhou: ${e}`);
+      // Fallback sem attachment_ids (apenas texto, o anexo ja esta vinculado ao record)
       try {
-        await executeKw(env, model, 'message_post', [[record_id], {
-          body: body + `<br/><i>(attachment ${attachmentId} - ver em anexos)</i>`,
-          message_type: 'comment', subtype_xmlid: 'mail.mt_comment',
-        }]);
-      } catch (e2) {}
+        await executeKw(env, model, 'message_post', [record_id], {
+          body: body + `<br/><i>(arquivo ${filename} - id ${attId} - ver na aba Anexos)</i>`,
+          message_type: 'comment',
+          subtype_xmlid: 'mail.mt_comment',
+        });
+      } catch (e2) {
+        console.log(`[Bot-Redrive] Fallback message_post tambem falhou: ${e2}`);
+      }
     }
 
     return res.json({

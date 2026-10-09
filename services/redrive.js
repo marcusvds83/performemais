@@ -213,11 +213,12 @@ async function postRedriveContactToChatter(env, model, recordId, rc) {
   body += `<b>UUID:</b> ${rc.uuid || rc.id || '-'}<br/>`;
   body += `<b>Atualizado em:</b> ${rc.updatedAt || new Date().toISOString()}<br/>`;
   try {
-    await executeKw(env, model, 'message_post', [[recordId], {
+    // message_post aceita só kwargs - usar args=[recordId], kwargs={body,...}
+    await executeKw(env, model, 'message_post', [recordId], {
       body,
       message_type: 'notification',
       subtype_xmlid: 'mail.mt_note',
-    }]);
+    });
     return { ok: true };
   } catch (e) {
     return { ok: false, error: String(e) };
