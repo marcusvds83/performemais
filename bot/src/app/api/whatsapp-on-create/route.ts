@@ -157,8 +157,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, action: "handoff" });
   }
 
-  // 5. Buscar historico da conversa (canal WA)
+  // 5. Buscar historico da conversa (canal WA) + verificar se humano respondeu nas ultimas 2h
   let historyText = "";
+  let humanRepliedRecently = false;
+  const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+  const nowMs = Date.now();
   if (channelId) {
     try {
       const channelMsgs = await searchRead<any>(
@@ -178,10 +181,26 @@ export async function POST(req: NextRequest) {
         if (mtext) {
           historyText += `${role}: ${mtext}\n`;
         }
+        // Verifica se foi uma msg de um HUMANO (Operador, nao Cliente nem Bot/Sistema) nas ultimas 2h
+        if (role === "Operador") {
+          // m.create_date vem em formato Odoo: "2026-10-09 18:20:37.469585"
+          try {
+            const dt = new Date(m.create_date.replace(" ", "T") + "Z");
+            if (nowMs - dt.getTime() < TWO_HOURS_MS) {
+              humanRepliedRecently = true;
+            }
+          } catch {}
+        }
       }
     } catch (e) {
       console.log(`[Performe+-OnCreate] history lookup failed: ${e}`);
     }
+  }
+
+  // SE humano respondeu nas ultimas 2h, o bot FICA EM SILÊNCIO (igual Nytro)
+  if (humanRepliedRecently) {
+    console.log(`[Performe+-OnCreate] Human replied in last 2h — bot staying silent`);
+    return NextResponse.json({ ok: true, skipped: "human_replied_recently" });
   }
 
   // 6. Construir mensagens para Gemini
