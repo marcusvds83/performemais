@@ -113,7 +113,7 @@ services:
         sync: false  # escolher um token, ex: performe-bot-verify-2024
       # === Bot behavior ===
       - key: PERFORME_OPERATOR_USER_IDS
-        value: "2,6"  # IDs dos usuários operadores no Odoo
+        value: "2,5"  # IDs dos usuários operadores no Odoo
       - key: PERFORME_HANDOFF_WORDS
         value: "humano,atendente,operador,falar com pessoa"
       - key: PERFORME_DEFAULT_SALESPERSON_ID
@@ -123,6 +123,13 @@ services:
       # === Cron (inatividade → oportunidade) ===
       - key: CRON_SECRET
         sync: false  # token de auth para o cron endpoint
+      # === Redrive API ===
+      - key: REDRIVE_LOGIN
+        sync: false  # paulo.yure@gmail.com
+      - key: REDRIVE_PASSWORD
+        sync: false  # MAde1988
+      - key: REDRIVE_API_URL
+        value: https://api.redrive.com.br
       # === Forward webhook (opcional, para Odoo) ===
       - key: ODOO_WEBHOOK_FORWARD_URL
-        sync: false  # https://www.performe.com.br/whatsapp/webhook
+        sync: false  # https://www.performemais.com/whatsapp/webhook
